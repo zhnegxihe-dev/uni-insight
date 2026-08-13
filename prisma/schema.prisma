@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  nickname        String
+  bio             String?
+  avatarUrl       String?
+  starScore       Int      @default(0)
+  level           Int      @default(0)
+  verifiedSchools String   @default("[]") // JSON: string[]
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+
+  questions Question[]
+  replies   Reply[]
+  stars     ContentStar[]
+  reviews   Review[]
+  aiPosts   AiPost[]
+}
+
+model School {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  region      String?
+  type        String?
+  description String?
+  verified    Boolean @default(false)
+
+  courses  Course[]
+  teachers Teacher[]
+  reviews  Review[]
+}
+
+model Major {
+  id       String  @id @default(cuid())
+  name     String
+  slug     String  @unique
+  category String?
+
+  courses Course[]
+  reviews Review[]
+}
+
+model Course {
+  id       String  @id @default(cuid())
+  schoolId String
+  majorId  String?
+  name     String
+  code     String?
+
+  school School  @relation(fields: [schoolId], references: [id])
+  major  Major?  @relation(fields: [majorId], references: [id])
+  reviews Review[]
+
+  @@unique([schoolId, code])
+}
+
+model Teacher {
+  id       String  @id @default(cuid())
+  schoolId String
+  name     String
+  department String?
+  title    String?
+
+  school  School   @relation(fields: [schoolId], references: [id])
+  reviews Review[]
+}
+
+model Question {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  authorId      String
+  scenarioType  String
+  scenarioMeta  String   @default("{}") // JSON
+  degreeLevel   String?
+  replyCount    Int      @default(0)
+  starCount     Int      @default(0)
+  acceptedReplyId String?
+  isLocked      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  author    User          @relation(fields: [authorId], references: [id])
+  replies   Reply[]
+  tags      QuestionTag[]
+  aiSummary AiSummary?
+  aiPosts   AiPost[]
+}
+
+model Reply {
+  id         String   @id @default(cuid())
+  questionId String
+  authorId   String
+  content    String
+  starCount  Int      @default(0)
+  isAccepted Boolean  @default(false)
+  status     String   @default("visible")
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id])
+  author   User     @relation(fields: [authorId], references: [id])
+}
+
+model ContentStar {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String // question | reply | ai_post
+  targetId   String
+  weight     Float    @default(1)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, targetType, targetId])
+}
+
+model Tag {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  type        String
+  description String?
+
+  questions QuestionTag[]
+}
+
+model QuestionTag {
+  questionId String
+  tagId      String
+
+  question Question @relation(fields: [questionId], references: [id])
+  tag      Tag      @relation(fields: [tagId], references: [id])
+
+  @@id([questionId, tagId])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  authorId     String
+  schoolId     String
+  majorId      String?
+  courseId     String?
+  teacherId    String?
+  degreeLevel  String?
+  enrolledYear Int?
+  isAlumni     Boolean  @default(false)
+  ratings      String   @default("{}") // JSON
+  content      String?
+  status       String   @default("visible")
+  createdAt    DateTime @default(now())
+
+  author  User    @relation(fields: [authorId], references: [id])
+  school  School  @relation(fields: [schoolId], references: [id])
+  major   Major?  @relation(fields: [majorId], references: [id])
+  course  Course? @relation(fields: [courseId], references: [id])
+  teacher Teacher? @relation(fields: [teacherId], references: [id])
+}
+
+model AiSummary {
+  id             String   @id @default(cuid())
+  questionId     String   @unique
+  summaryJson    String
+  sourceReplyIds String   @default("[]") // JSON
+  version        Int      @default(1)
+  isLocked       Boolean  @default(false)
+  confidence     String?
+  sampleNote     String?
+  createdAt      DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id])
+}
+
+model AiPost {
+  id               String    @id @default(cuid())
+  authorId         String
+  questionId       String?
+  title            String
+  summaryJson      String
+  selectedReplyIds String    @default("[]") // JSON
+  sourceCount      Int       @default(0)
+  starCount        Int       @default(0)
+  isHumanEdited    Boolean   @default(false)
+  status           String    @default("published")
+  createdAt        DateTime  @default(now())
+  publishedAt      DateTime?
+
+  author   User     @relation(fields: [authorId], references: [id])
+  question Question? @relation(fields: [questionId], references: [id])
+}

@@ -1,0 +1,12 @@
+{
+  "questionStar": 1,
+  "replyStar": 2,
+  "acceptedReply": 10,
+  "aiPostStar": 5,
+  "validReport": 5,
+  "verifiedSchool": 20,
+  "falseReport": -10,
+  "confirmedViolation": -20,
+  "starGiverWeightBase": 1.0,
+  "starGiverWeightPerLevel": 0.25
+}
