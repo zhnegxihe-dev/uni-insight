@@ -58,38 +58,38 @@ model Course {
   name     String
   code     String?
 
-  school School  @relation(fields: [schoolId], references: [id])
-  major  Major?  @relation(fields: [majorId], references: [id])
+  school  School   @relation(fields: [schoolId], references: [id])
+  major   Major?   @relation(fields: [majorId], references: [id])
   reviews Review[]
 
   @@unique([schoolId, code])
 }
 
 model Teacher {
-  id       String  @id @default(cuid())
-  schoolId String
-  name     String
+  id         String  @id @default(cuid())
+  schoolId   String
+  name       String
   department String?
-  title    String?
+  title      String?
 
   school  School   @relation(fields: [schoolId], references: [id])
   reviews Review[]
 }
 
 model Question {
-  id            String   @id @default(cuid())
-  title         String
-  description   String?
-  authorId      String
-  scenarioType  String
-  scenarioMeta  String   @default("{}") // JSON
-  degreeLevel   String?
-  replyCount    Int      @default(0)
-  starCount     Int      @default(0)
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  authorId        String
+  scenarioType    String
+  scenarioMeta    String   @default("{}") // JSON
+  degreeLevel     String?
+  replyCount      Int      @default(0)
+  starCount       Int      @default(0)
   acceptedReplyId String?
-  isLocked      Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isLocked        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   author    User          @relation(fields: [authorId], references: [id])
   replies   Reply[]
@@ -160,10 +160,10 @@ model Review {
   status       String   @default("visible")
   createdAt    DateTime @default(now())
 
-  author  User    @relation(fields: [authorId], references: [id])
-  school  School  @relation(fields: [schoolId], references: [id])
-  major   Major?  @relation(fields: [majorId], references: [id])
-  course  Course? @relation(fields: [courseId], references: [id])
+  author  User     @relation(fields: [authorId], references: [id])
+  school  School   @relation(fields: [schoolId], references: [id])
+  major   Major?   @relation(fields: [majorId], references: [id])
+  course  Course?  @relation(fields: [courseId], references: [id])
   teacher Teacher? @relation(fields: [teacherId], references: [id])
 }
 
@@ -195,6 +195,6 @@ model AiPost {
   createdAt        DateTime  @default(now())
   publishedAt      DateTime?
 
-  author   User     @relation(fields: [authorId], references: [id])
+  author   User      @relation(fields: [authorId], references: [id])
   question Question? @relation(fields: [questionId], references: [id])
 }

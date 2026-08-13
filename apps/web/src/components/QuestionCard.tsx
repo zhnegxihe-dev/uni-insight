@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MessageSquare, Sparkles, Star } from "lucide-react";
-import { SCENARIO_LABEL } from "@uni-insight/core";
+import { SCENARIO_LABEL } from "@/lib/core";
 import { cn, formatRelative, safeParse, truncate } from "@/lib/format";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 

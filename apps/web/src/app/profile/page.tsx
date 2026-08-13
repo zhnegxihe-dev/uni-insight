@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LEVELS, SCENARIO_LABEL } from "@uni-insight/core";
+import { LEVELS, SCENARIO_LABEL } from "@/lib/core";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { formatRelative, safeParse } from "@/lib/format";

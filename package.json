@@ -12,8 +12,8 @@
     "build": "npm run build --workspace @uni-insight/web",
     "start": "npm run start --workspace @uni-insight/web",
     "db:init": "node --env-file=.env scripts/init-db-pg.mjs",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
+    "db:generate": "prisma generate --schema apps/web/prisma/schema.prisma",
+    "db:push": "prisma db push --schema apps/web/prisma/schema.prisma",
     "db:seed": "node --env-file=.env scripts/seed.ts",
     "db:reset": "node --env-file=.env scripts/init-db-pg.mjs && node --env-file=.env scripts/seed.ts"
   },

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SCENARIOS } from "@uni-insight/core";
+import { SCENARIOS } from "@/lib/core";
 import { cn } from "@/lib/format";
 
 export function ScenarioTabs({ current }: { current: string }) {

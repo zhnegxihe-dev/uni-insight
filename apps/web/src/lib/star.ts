@@ -1,4 +1,4 @@
-import { levelForScore } from "@uni-insight/core";
+import { levelForScore } from "@/lib/core";
 import { prisma } from "./prisma";
 import { safeParse } from "./format";
 

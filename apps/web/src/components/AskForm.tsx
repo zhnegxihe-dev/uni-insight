@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SCENARIO_FIELDS, SCENARIOS } from "@uni-insight/core";
+import { SCENARIO_FIELDS, SCENARIOS } from "@/lib/core";
 
 export function AskForm() {
   const router = useRouter();

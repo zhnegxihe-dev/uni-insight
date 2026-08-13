@@ -1,4 +1,4 @@
-import { LEVELS, STAR_RULES } from "@uni-insight/core";
+import { LEVELS, STAR_RULES } from "@/lib/core";
 
 export const metadata = { title: "Star 等级 - UniInsight" };
 
