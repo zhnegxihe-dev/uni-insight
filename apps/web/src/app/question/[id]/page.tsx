@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckCircle2, ChevronLeft } from "lucide-react";
-import { SCENARIO_LABEL } from "@uni-insight/core";
+import { SCENARIO_LABEL } from "@/lib/core";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { formatRelative, safeParse } from "@/lib/format";

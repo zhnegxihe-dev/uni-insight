@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SCENARIOS } from "@uni-insight/core";
+import { SCENARIOS } from "@/lib/core";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 
