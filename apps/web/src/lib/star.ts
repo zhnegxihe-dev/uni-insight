@@ -1,32 +1,54 @@
 import { levelForScore } from "@/lib/core";
 import { prisma } from "./prisma";
 import { safeParse } from "./format";
+import { countFalseReports, countValidReportRewards, countViolations } from "./reports";
 
 export async function recomputeUserStar(userId: string): Promise<{ score: number; level: number }> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return { score: 0, level: 0 };
 
-  const [questionIds, replyIds, postIds] = await Promise.all([
-    prisma.question.findMany({ where: { authorId: userId }, select: { id: true } }),
-    prisma.reply.findMany({ where: { authorId: userId }, select: { id: true } }),
-    prisma.aiPost.findMany({ where: { authorId: userId }, select: { id: true } }),
+  const [questionRows, replyRows, postRows] = await Promise.all([
+    prisma.question.findMany({
+      where: { authorId: userId, status: { not: "hidden" } },
+      select: { id: true },
+    }),
+    prisma.reply.findMany({
+      where: { authorId: userId, status: { not: "hidden" } },
+      select: { id: true },
+    }),
+    prisma.aiPost.findMany({
+      where: { authorId: userId, status: { notIn: ["hidden", "rejected"] } },
+      select: { id: true },
+    }),
   ]);
 
-  const [questionStars, replyStars, postStars, accepted] = await Promise.all([
-    questionIds.length
-      ? prisma.contentStar.count({ where: { targetType: "question", targetId: { in: questionIds.map((q) => q.id) } } })
-      : 0,
-    replyIds.length
-      ? prisma.contentStar.count({ where: { targetType: "reply", targetId: { in: replyIds.map((r) => r.id) } } })
-      : 0,
-    postIds.length
-      ? prisma.contentStar.count({ where: { targetType: "ai_post", targetId: { in: postIds.map((p) => p.id) } } })
-      : 0,
-    prisma.reply.count({ where: { authorId: userId, isAccepted: true } }),
-  ]);
+  const [questionStars, replyStars, postStars, accepted, validReports, falseReports, violations] =
+    await Promise.all([
+      questionRows.length
+        ? prisma.contentStar.count({ where: { targetType: "question", targetId: { in: questionRows.map((q) => q.id) } } })
+        : 0,
+      replyRows.length
+        ? prisma.contentStar.count({ where: { targetType: "reply", targetId: { in: replyRows.map((r) => r.id) } } })
+        : 0,
+      postRows.length
+        ? prisma.contentStar.count({ where: { targetType: "ai_post", targetId: { in: postRows.map((p) => p.id) } } })
+        : 0,
+      prisma.reply.count({ where: { authorId: userId, isAccepted: true } }),
+      countValidReportRewards(userId),
+      countFalseReports(userId),
+      countViolations(userId),
+    ]);
 
   const verified = safeParse<string[]>(user.verifiedSchools, []).length;
-  const score = questionStars * 1 + replyStars * 2 + postStars * 5 + accepted * 10 + verified * 20;
+  const score =
+    questionStars * 1 +
+    replyStars * 2 +
+    postStars * 5 +
+    accepted * 10 +
+    verified * 20 +
+    validReports * 5 +
+    falseReports * -10 +
+    violations * -20;
   const level = levelForScore(score);
   await prisma.user.update({ where: { id: userId }, data: { starScore: score, level } });
   return { score, level };

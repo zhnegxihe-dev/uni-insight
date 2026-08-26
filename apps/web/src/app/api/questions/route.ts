@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { SCENARIOS } from "@/lib/core";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
+import { checkContentForUser, moderationErrorMessage } from "@/lib/moderation";
 
 function slugify(name: string): string {
   const ascii = name
@@ -28,6 +29,16 @@ export async function POST(request: Request) {
   if (!title) return NextResponse.json({ error: "请填写标题" }, { status: 400 });
   if (!SCENARIOS.some((s) => s.type === scenarioType)) {
     return NextResponse.json({ error: "场景类型不正确" }, { status: 400 });
+  }
+
+  // 广告词库 + 正则拦截
+  const titleCheck = checkContentForUser(title, user.level);
+  const descCheck = description ? checkContentForUser(description, user.level) : { ok: true as const, hits: [] };
+  if (!titleCheck.ok) {
+    return NextResponse.json({ error: moderationErrorMessage(titleCheck) }, { status: 400 });
+  }
+  if (!descCheck.ok) {
+    return NextResponse.json({ error: moderationErrorMessage(descCheck) }, { status: 400 });
   }
 
   const question = await prisma.question.create({

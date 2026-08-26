@@ -13,6 +13,7 @@ export interface SessionUser {
   nickname: string;
   level: number;
   starScore: number;
+  role: string;
   verifiedSchools: string[];
 }
 
@@ -50,11 +51,18 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       nickname: user.nickname,
       level: user.level,
       starScore: user.starScore,
+      role: user.role,
       verifiedSchools: safeParse<string[]>(user.verifiedSchools, []),
     };
   } catch {
     return null;
   }
+}
+
+export async function requireAdmin(): Promise<SessionUser | null> {
+  const user = await getSessionUser();
+  if (!user || user.role !== "admin") return null;
+  return user;
 }
 
 export function hashPassword(password: string): string {

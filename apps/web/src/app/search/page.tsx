@@ -1,5 +1,10 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { prisma } from "@/lib/prisma";
+import { formatRelative, safeParse } from "@/lib/format";
+import { Highlight } from "@/components/Highlight";
+import { TrackView } from "@/components/TrackView";
+import { parseSearchQuery } from "@/lib/recommend";
 
 export const dynamic = "force-dynamic";
 
@@ -11,81 +16,186 @@ export default async function SearchPage({
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
 
-  const [questions, schools, majors] = await Promise.all([
+  const [questions, schools, majors, courses, teachers, posts] = await Promise.all([
     query
       ? prisma.question.findMany({
-          where: { OR: [{ title: { contains: query } }, { description: { contains: query } }] },
-          select: { id: true, title: true, replyCount: true, starCount: true },
+          where: { status: { not: "hidden" }, OR: [{ title: { contains: query } }, { description: { contains: query } }] },
+          select: { id: true, title: true, description: true, replyCount: true, starCount: true },
+          orderBy: [{ starCount: "desc" }, { createdAt: "desc" }],
           take: 10,
         })
       : [],
     query
       ? prisma.school.findMany({
           where: { OR: [{ name: { contains: query } }, { description: { contains: query } }] },
-          select: { id: true, name: true, slug: true, region: true },
+          select: { id: true, name: true, slug: true, region: true, description: true },
           take: 5,
         })
       : [],
     query
       ? prisma.major.findMany({
-          where: { name: { contains: query } },
-          select: { id: true, name: true, slug: true },
+          where: { OR: [{ name: { contains: query } }, { category: { contains: query } }] },
+          select: { id: true, name: true, slug: true, category: true },
           take: 5,
+        })
+      : [],
+    query
+      ? prisma.course.findMany({
+          where: { OR: [{ name: { contains: query } }, { code: { contains: query } }] },
+          include: { school: { select: { id: true, name: true, slug: true } } },
+          take: 6,
+        })
+      : [],
+    query
+      ? prisma.teacher.findMany({
+          where: { OR: [{ name: { contains: query } }, { department: { contains: query } }] },
+          include: { school: { select: { id: true, name: true, slug: true } } },
+          take: 6,
+        })
+      : [],
+    query
+      ? prisma.aiPost.findMany({
+          where: {
+            status: "published",
+            OR: [{ title: { contains: query } }, { summaryJson: { contains: query } }],
+          },
+          select: {
+            id: true,
+            title: true,
+            summaryJson: true,
+            starCount: true,
+            createdAt: true,
+            author: { select: { nickname: true } },
+          },
+          orderBy: [{ starCount: "desc" }, { createdAt: "desc" }],
+          take: 6,
         })
       : [],
   ]);
 
+  const total = questions.length + schools.length + majors.length + courses.length + teachers.length + posts.length;
+  const searchTags = query ? await parseSearchQuery(query) : [];
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      {query && <TrackView actionType="search" targetType="search" targetId={query} tags={searchTags} />}
       <div>
         <h1 className="text-xl font-semibold text-ink">搜索</h1>
-        <p className="mt-1 text-sm text-zinc-500">{query ? `“${query}” 的结果` : "输入关键词开始搜索"}</p>
+        <p className="mt-1 text-sm text-zinc-500">
+          {query ? `“${query}” 找到 ${total} 条结果` : "输入关键词开始搜索"}
+        </p>
       </div>
 
-      {schools.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold text-zinc-600">学校</h2>
-          <div className="space-y-2">
-            {schools.map((school) => (
-              <Link key={school.id} href={`/?scenario=all&q=${encodeURIComponent(school.name)}`} className="card block px-4 py-3 hover:border-zinc-300">
-                <p className="text-sm font-medium text-ink">{school.name}</p>
-                <p className="text-xs text-zinc-400">{school.region || "暂无地区信息"}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
+      {query && total === 0 && (
+        <div className="card p-8 text-center text-sm text-zinc-400">没有找到相关内容，换个关键词试试</div>
       )}
 
-      {majors.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold text-zinc-600">专业</h2>
-          <div className="space-y-2">
-            {majors.map((major) => (
-              <Link key={major.id} href={`/?scenario=all&q=${encodeURIComponent(major.name)}`} className="card block px-4 py-3 hover:border-zinc-300">
-                <p className="text-sm font-medium text-ink">{major.name}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      <Group title="学校" count={schools.length}>
+        {schools.map((school) => (
+          <Link key={school.id} href={`/school/${school.slug}`} className="card block px-4 py-3 hover:border-zinc-300">
+            <p className="text-sm font-medium text-ink">
+              <Highlight text={school.name} query={query} />
+            </p>
+            <p className="mt-0.5 text-xs text-zinc-400">
+              {school.region || "地区未知"} ·{" "}
+              <Highlight text={school.description ?? "查看学校档案与评价"} query={query} />
+            </p>
+          </Link>
+        ))}
+      </Group>
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-zinc-600">问题</h2>
-        {questions.length === 0 ? (
-          <p className="text-sm text-zinc-400">没有找到相关问题</p>
-        ) : (
-          <div className="space-y-2">
-            {questions.map((question) => (
-              <Link key={question.id} href={`/question/${question.id}`} className="card block px-4 py-3 hover:border-zinc-300">
-                <p className="text-sm font-medium text-ink">{question.title}</p>
-                <p className="mt-1 text-xs text-zinc-400">
-                  {question.starCount} star · {question.replyCount} 回复
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+      <Group title="专业" count={majors.length}>
+        {majors.map((major) => (
+          <Link key={major.id} href={`/major/${major.slug}`} className="card block px-4 py-3 hover:border-zinc-300">
+            <p className="text-sm font-medium text-ink">
+              <Highlight text={major.name} query={query} />
+            </p>
+            <p className="mt-0.5 text-xs text-zinc-400">
+              {major.category ? <Highlight text={major.category} query={query} /> : "专业档案"}
+              {" · 查看跨校对比"}
+            </p>
+          </Link>
+        ))}
+      </Group>
+
+      <Group title="课程" count={courses.length}>
+        {courses.map((course) => (
+          <Link key={course.id} href={`/course/${course.id}`} className="card block px-4 py-3 hover:border-zinc-300">
+            <p className="text-sm font-medium text-ink">
+              <Highlight text={course.name} query={query} />
+              {course.code ? <span className="ml-1.5 text-xs font-normal text-zinc-400">{course.code}</span> : null}
+            </p>
+            <p className="mt-0.5 text-xs text-zinc-400">
+              <Highlight text={course.school.name} query={query} /> · 查看课程评价
+            </p>
+          </Link>
+        ))}
+      </Group>
+
+      <Group title="教师" count={teachers.length}>
+        {teachers.map((teacher) => (
+          <Link key={teacher.id} href={`/teacher/${teacher.id}`} className="card block px-4 py-3 hover:border-zinc-300">
+            <p className="text-sm font-medium text-ink">
+              <Highlight text={teacher.name} query={query} />
+              {teacher.title ? <span className="ml-1.5 text-xs font-normal text-zinc-400">{teacher.title}</span> : null}
+            </p>
+            <p className="mt-0.5 text-xs text-zinc-400">
+              {teacher.department ? <Highlight text={teacher.department} query={query} /> : "院系未知"} ·{" "}
+              <Highlight text={teacher.school.name} query={query} />
+            </p>
+          </Link>
+        ))}
+      </Group>
+
+      <Group title="AI 精选帖" count={posts.length}>
+        {posts.map((post) => {
+          const summary = safeParse<Record<string, unknown>>(post.summaryJson, {});
+          const overview = typeof summary.overview === "string" ? summary.overview : "";
+          return (
+            <Link key={post.id} href={`/post/${post.id}`} className="card block px-4 py-3 hover:border-zinc-300">
+              <p className="text-sm font-medium text-ink">
+                <Highlight text={post.title} query={query} />
+              </p>
+              <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
+                {overview ? <Highlight text={overview} query={query} /> : "AI 整合的真实经验总结"}
+              </p>
+              <p className="mt-1 text-xs text-zinc-400">
+                {post.author.nickname} · {post.starCount} star · {formatRelative(post.createdAt)}
+              </p>
+            </Link>
+          );
+        })}
+      </Group>
+
+      <Group title="问题" count={questions.length}>
+        {questions.map((question) => (
+          <Link key={question.id} href={`/question/${question.id}`} className="card block px-4 py-3 hover:border-zinc-300">
+            <p className="text-sm font-medium text-ink">
+              <Highlight text={question.title} query={query} />
+            </p>
+            {question.description && (
+              <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
+                <Highlight text={question.description} query={query} />
+              </p>
+            )}
+            <p className="mt-1 text-xs text-zinc-400">
+              {question.starCount} star · {question.replyCount} 回复
+            </p>
+          </Link>
+        ))}
+      </Group>
     </div>
+  );
+}
+
+function Group({ title, count, children }: { title: string; count: number; children: ReactNode }) {
+  if (count === 0) return null;
+  return (
+    <section>
+      <h2 className="mb-2 text-sm font-semibold text-zinc-600">
+        {title} <span className="ml-1 font-normal text-zinc-400">{count}</span>
+      </h2>
+      <div className="space-y-2">{children}</div>
+    </section>
   );
 }

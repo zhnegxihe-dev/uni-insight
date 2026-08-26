@@ -1,0 +1,10 @@
+[
+  { "id": "wechat_id", "label": "微信号/联系方式", "pattern": "(?:微信号?|vx|v信|wechat|wx|威信)\\s*[:：]?\\s*[a-zA-Z0-9_-]{5,20}" },
+  { "id": "qq_number", "label": "QQ 号", "pattern": "(?:QQ|qq|扣扣|企鹅号)\\s*[:：]?\\s*\\d{5,12}" },
+  { "id": "phone", "label": "手机号", "pattern": "1[3-9]\\d{9}" },
+  { "id": "url", "label": "外部链接", "pattern": "(?:https?://|www\\.)[^\\s，。；：]+" },
+  { "id": "domain", "label": "外部域名", "pattern": "[a-z0-9-]+\\.(?:com|cn|net|org|top|vip|cc|xyz|me)\\b" },
+  { "id": "contact_add", "label": "诱导加联系方式", "pattern": "(?:加|添加|联系|私信)\\s*(?:我|vx|微信|qq|Q)" },
+  { "id": "paid_guarantee", "label": "付费包过承诺", "pattern": "(?:保过|保录取|包过|包录取|内部名额|不过退款)" },
+  { "id": "money", "label": "转账/收款", "pattern": "(?:转账|收款码|支付宝|微信收款|定金|先付|付款后)" }
+]

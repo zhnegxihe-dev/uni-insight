@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { LEVELS, SCENARIO_LABEL } from "@/lib/core";
+import { BadgeCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { formatRelative, safeParse } from "@/lib/format";
@@ -19,13 +20,13 @@ export default async function ProfilePage() {
       select: { starScore: true, level: true, verifiedSchools: true, bio: true, createdAt: true },
     }),
     prisma.question.findMany({
-      where: { authorId: user.id },
+      where: { authorId: user.id, status: { not: "hidden" } },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: { id: true, title: true, starCount: true, replyCount: true, createdAt: true },
     }),
     prisma.reply.findMany({
-      where: { authorId: user.id },
+      where: { authorId: user.id, status: { not: "hidden" } },
       orderBy: { createdAt: "desc" },
       take: 30,
       select: {
@@ -38,7 +39,7 @@ export default async function ProfilePage() {
       },
     }),
     prisma.aiPost.findMany({
-      where: { authorId: user.id },
+      where: { authorId: user.id, status: { notIn: ["hidden", "rejected"] } },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: { id: true, title: true, starCount: true, createdAt: true },
@@ -69,6 +70,15 @@ export default async function ProfilePage() {
               <VerifiedBadge schools={schools} />
               <span className="text-xs text-zinc-400">注册于 {formatRelative(profile.createdAt)}</span>
             </div>
+            {schools.length === 0 && (
+              <Link
+                href="/settings"
+                className="mt-3 inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100"
+              >
+                <BadgeCheck className="h-3.5 w-3.5" />
+                去认证学校邮箱，+20 star
+              </Link>
+            )}
           </div>
           <div className="text-right">
             <p className="text-2xl font-semibold text-ink">{profile.starScore}</p>
@@ -106,8 +116,10 @@ export default async function ProfilePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-base font-semibold text-ink">我的回复</h2>
-        <p className="mb-3 text-xs text-zinc-400">勾选同类回复，AI 可跨问题整合成新精选帖</p>
+        <h2 className="mb-1 text-base font-semibold text-ink">AI 精选帖创作</h2>
+        <p className="mb-3 text-xs text-zinc-400">
+          从你的历史回答中勾选至少 3 条相似回复，AI 会整合成一篇新帖子直接发布（需 L2 及以上）。
+        </p>
         <MyRepliesPicker
           replies={replies.map((reply) => ({
             id: reply.id,

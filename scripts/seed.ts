@@ -6,6 +6,14 @@ const PASSWORD = "Test1234!";
 const passwordHash = bcrypt.hashSync(PASSWORD, 10);
 
 async function clean() {
+  await prisma.message.deleteMany();
+  await prisma.conversation.deleteMany();
+  await prisma.follow.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.userAction.deleteMany();
+  await prisma.userProfile.deleteMany();
+  await prisma.report.deleteMany();
+  await prisma.schoolEmailDomain.deleteMany();
   await prisma.contentStar.deleteMany();
   await prisma.aiPost.deleteMany();
   await prisma.aiSummary.deleteMany();
@@ -27,10 +35,20 @@ async function main() {
   const users = await Promise.all([
     prisma.user.create({
       data: {
+        email: "admin@demo.uni",
+        passwordHash,
+        nickname: "平台管理员",
+        bio: "负责内容审核与社区治理。",
+        role: "admin",
+      },
+    }),
+    prisma.user.create({
+      data: {
         email: "seeker@demo.uni",
         passwordHash,
         nickname: "高三考生小星",
         bio: "高考出分，正在研究志愿填报。",
+        identity: JSON.stringify({ role: "gaokao", targetSchool: "中山大学", targetMajor: "经济学", region: "广东" }),
       },
     }),
     prisma.user.create({
@@ -82,9 +100,25 @@ async function main() {
         verifiedSchools: JSON.stringify(["中山大学"]),
       },
     }),
+    prisma.user.create({
+      data: {
+        email: "sophomore@demo.uni",
+        passwordHash,
+        nickname: "中大金融学妹",
+        verifiedSchools: JSON.stringify(["中山大学"]),
+      },
+    }),
+    prisma.user.create({
+      data: {
+        email: "xmu-alumni@demo.uni",
+        passwordHash,
+        nickname: "厦大经济校友",
+        verifiedSchools: JSON.stringify(["厦门大学"]),
+      },
+    }),
   ]);
 
-  const [seeker, alumni, student, grad, graduate, xmu, alumni2] = users;
+  const [admin, seeker, alumni, student, grad, graduate, xmu, alumni2, sysuSophomore, xmuAlumni] = users;
 
   const sysu = await prisma.school.create({
     data: {
@@ -107,8 +141,21 @@ async function main() {
     },
   });
 
+  // 学校邮箱域名映射（学校邮箱认证演示模式）
+  await prisma.schoolEmailDomain.createMany({
+    data: [
+      { schoolId: sysu.id, domain: "sysu.edu.cn", note: "中山大学官方邮箱" },
+      { schoolId: sysu.id, domain: "mail2.sysu.edu.cn", note: "中山大学备用邮箱" },
+      { schoolId: xmuSchool.id, domain: "xmu.edu.cn", note: "厦门大学官方邮箱" },
+      { schoolId: xmuSchool.id, domain: "stu.xmu.edu.cn", note: "厦门大学学生邮箱" },
+    ],
+  });
+
   const economics = await prisma.major.create({
     data: { name: "经济学", slug: "economics", category: "经济学类" },
+  });
+  const finance = await prisma.major.create({
+    data: { name: "金融学", slug: "finance", category: "金融学类" },
   });
   const cs = await prisma.major.create({
     data: { name: "计算机科学与技术", slug: "computer-science", category: "计算机类" },
@@ -117,14 +164,29 @@ async function main() {
   const micro = await prisma.course.create({
     data: { schoolId: sysu.id, majorId: economics.id, name: "微观经济学", code: "ECON101" },
   });
-  await prisma.course.create({
+  const macro = await prisma.course.create({
     data: { schoolId: sysu.id, majorId: economics.id, name: "宏观经济学", code: "ECON102" },
   });
-  await prisma.course.create({
+  const econometrics = await prisma.course.create({
     data: { schoolId: sysu.id, majorId: economics.id, name: "计量经济学", code: "ECON210" },
   });
-  await prisma.course.create({
+  const financeCourse = await prisma.course.create({
+    data: { schoolId: sysu.id, majorId: finance.id, name: "金融学", code: "FIN101" },
+  });
+  const intlFinance = await prisma.course.create({
+    data: { schoolId: sysu.id, majorId: finance.id, name: "国际金融", code: "FIN201" },
+  });
+  const industryEco = await prisma.course.create({
+    data: { schoolId: sysu.id, majorId: economics.id, name: "产业经济学", code: "ECON330" },
+  });
+  const xmuMicro = await prisma.course.create({
     data: { schoolId: xmuSchool.id, majorId: economics.id, name: "中级微观经济学", code: "ECON301" },
+  });
+  const xmuEconometrics = await prisma.course.create({
+    data: { schoolId: xmuSchool.id, majorId: economics.id, name: "计量经济学", code: "ECON211" },
+  });
+  const xmuFinance = await prisma.course.create({
+    data: { schoolId: xmuSchool.id, majorId: finance.id, name: "金融学", code: "FIN101" },
   });
 
   const teacher = await prisma.teacher.create({
@@ -135,27 +197,60 @@ async function main() {
       title: "教授",
     },
   });
+  const zhang = await prisma.teacher.create({
+    data: {
+      schoolId: sysu.id,
+      name: "张老师",
+      department: "经济学院",
+      title: "讲师",
+    },
+  });
+  const chen = await prisma.teacher.create({
+    data: {
+      schoolId: sysu.id,
+      name: "陈教授",
+      department: "经济学院",
+      title: "教授",
+    },
+  });
+  const li = await prisma.teacher.create({
+    data: {
+      schoolId: xmuSchool.id,
+      name: "李教授",
+      department: "经济学院",
+      title: "教授",
+    },
+  });
+  const zhao = await prisma.teacher.create({
+    data: {
+      schoolId: xmuSchool.id,
+      name: "赵老师",
+      department: "经济学院",
+      title: "副教授",
+    },
+  });
 
   const tags: Record<string, string> = {};
   const tagDefs = [
-    ["中山大学", "school"],
-    ["厦门大学", "school"],
-    ["经济学", "major"],
-    ["计算机", "major"],
-    ["本科", "degree"],
-    ["硕士", "degree"],
-    ["高考志愿", "scenario"],
-    ["转专业", "scenario"],
-    ["考研保研", "scenario"],
-    ["申研留学", "scenario"],
-    ["导师选择", "scenario"],
-    ["就业行业", "scenario"],
-    ["广东", "region"],
-    ["金融", "industry"],
+    ["中山大学", "school", "sysu"],
+    ["厦门大学", "school", "xmu"],
+    ["经济学", "major", "economics"],
+    ["金融学", "major", "finance"],
+    ["计算机", "major", "computer-science"],
+    ["本科", "degree", "bachelor"],
+    ["硕士", "degree", "master"],
+    ["高考志愿", "scenario", "gaokao"],
+    ["转专业", "scenario", "transfer"],
+    ["考研保研", "scenario", "grad-cn"],
+    ["申研留学", "scenario", "grad-abroad"],
+    ["导师选择", "scenario", "advisor"],
+    ["就业行业", "scenario", "career"],
+    ["广东", "region", "guangdong"],
+    ["金融", "industry", "finance-industry"],
   ] as const;
-  for (const [name, type] of tagDefs) {
+  for (const [name, type, slug] of tagDefs) {
     const tag = await prisma.tag.create({
-      data: { name, slug: `tag-${name}`, type },
+      data: { name, slug, type },
     });
     tags[name] = tag.id;
   }
@@ -247,7 +342,7 @@ async function main() {
       description: "高考出分后想报中大经济学，想知道真实课程、就业和行业环境，求在读或毕业的学长学姐现身说法。",
       authorId: seeker.id,
       scenarioType: "gaokao",
-      scenarioMeta: JSON.stringify({ scoreBand: "600 分 / 省排 8000", subjects: "物理+化学+生物", cityPref: "广东" }),
+      scenarioMeta: JSON.stringify({ province: "广东", scoreBand: "600 分 / 省排 8000", subjects: "物理+化学+生物", cityPref: "广东" }),
       degreeLevel: "bachelor",
       replyCount: replySeed.length,
       starCount: 5,
@@ -290,6 +385,34 @@ async function main() {
       await seedStars("reply", reply.id, seed.stars, seed.author.id);
     }
   }
+
+  // C 部分演示：一条广告回复（已被 3 次举报自动折叠，进入审核队列）
+  const adReply = await prisma.reply.create({
+    data: {
+      questionId: mainQuestion.id,
+      authorId: graduate.id,
+      content: "想稳上中大经济学可以加微信 zhongda2026，保录取有名额，先到先得",
+      starCount: 0,
+      status: "folded",
+    },
+  });
+  await prisma.report.createMany({
+    data: [
+      { reporterId: seeker.id, targetType: "reply", targetId: adReply.id, targetOwnerId: graduate.id, reason: "ad", detail: "明显是中介广告，留了微信号" },
+      { reporterId: student.id, targetType: "reply", targetId: adReply.id, targetOwnerId: graduate.id, reason: "ad" },
+      { reporterId: xmu.id, targetType: "reply", targetId: adReply.id, targetOwnerId: graduate.id, reason: "ad" },
+    ],
+  });
+  // 另有一条未达折叠阈值的待审核举报（演示队列多样性）
+  await prisma.report.create({
+    data: {
+      reporterId: seeker.id,
+      targetType: "reply",
+      targetId: replies[2].id,
+      targetOwnerId: replies[2].authorId,
+      reason: "irrelevant",
+    },
+  });
 
   const aiSummary = {
     overview:
@@ -453,28 +576,445 @@ async function main() {
     ]
   );
 
-  await prisma.review.create({
-    data: {
-      authorId: student.id,
-      schoolId: sysu.id,
-      majorId: economics.id,
-      courseId: micro.id,
-      degreeLevel: "bachelor",
-      enrolledYear: 2023,
-      ratings: JSON.stringify({ teaching: 4, workload: 4, difficulty: 4, grading: 4, career: 4 }),
-      content: "老师讲得清楚，作业偏多，案例贴国内现实，对理解经济学很有帮助。",
+  async function seedReview(input: {
+    authorId: string;
+    schoolId: string;
+    majorId?: string | null;
+    courseId?: string | null;
+    teacherId?: string | null;
+    degreeLevel: string;
+    enrolledYear?: number | null;
+    isAlumni?: boolean;
+    ratings: Record<string, unknown>;
+    content: string;
+  }) {
+    await prisma.review.create({
+      data: {
+        authorId: input.authorId,
+        schoolId: input.schoolId,
+        majorId: input.majorId ?? null,
+        courseId: input.courseId ?? null,
+        teacherId: input.teacherId ?? null,
+        degreeLevel: input.degreeLevel,
+        enrolledYear: input.enrolledYear ?? null,
+        isAlumni: input.isAlumni ?? false,
+        ratings: JSON.stringify(input.ratings),
+        content: input.content,
+      },
+    });
+  }
+
+  // 学校/专业级结构化评价（经济学）
+  await seedReview({
+    authorId: alumni.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2019,
+    isAlumni: true,
+    ratings: {
+      teaching: 4, workload: 4, difficulty: 3, employment: 5, atmosphere: 4,
+      outcomes: { furtherStudy: 35, employment: 50, civilService: 15 },
     },
+    content: "中大经济学课程偏理论，但珠三角金融就业认可度高，实习和校友资源是最大优势。",
   });
-  await prisma.review.create({
-    data: {
-      authorId: grad.id,
-      schoolId: sysu.id,
-      teacherId: teacher.id,
-      degreeLevel: "master",
-      enrolledYear: 2024,
-      ratings: JSON.stringify({ guidance: 4, push: 3, atmosphere: 4, career: 4, resources: 4 }),
-      content: "组会两周一次，研究方向偏产业政策，毕业去向有券商也有继续读博的。",
+  await seedReview({
+    authorId: student.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: {
+      teaching: 4, workload: 4, difficulty: 3, employment: 4, atmosphere: 4,
+      outcomes: { furtherStudy: 30, employment: 55, civilService: 15 },
     },
+    content: "课程压力中等，大二计量比较硬核；同学里很多人在大二就开始找实习。",
+  });
+  await seedReview({
+    authorId: graduate.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2020,
+    isAlumni: true,
+    ratings: {
+      teaching: 3, workload: 4, difficulty: 4, employment: 5, atmosphere: 4,
+      outcomes: { furtherStudy: 30, employment: 55, civilService: 15 },
+    },
+    content: "毕业去向主要是银行、券商、咨询和企业财务，硕士学历对进头部岗位帮助明显。",
+  });
+  await seedReview({
+    authorId: grad.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    degreeLevel: "master",
+    enrolledYear: 2024,
+    ratings: {
+      teaching: 4, workload: 5, difficulty: 5, employment: 4, atmosphere: 3,
+      outcomes: { furtherStudy: 45, employment: 45, civilService: 10 },
+    },
+    content: "读研阶段更卷，计量和论文是硬门槛；想走学术的同学不少，就业资源也集中在金融圈。",
+  });
+  await seedReview({
+    authorId: xmu.id,
+    schoolId: xmuSchool.id,
+    majorId: economics.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: {
+      teaching: 5, workload: 4, difficulty: 4, employment: 3, atmosphere: 4,
+      outcomes: { furtherStudy: 40, employment: 45, civilService: 15 },
+    },
+    content: "厦大经济学科沉淀深，课程严谨，学术氛围浓；就业上珠三角不如中大便利。",
+  });
+  await seedReview({
+    authorId: xmuAlumni.id,
+    schoolId: xmuSchool.id,
+    majorId: economics.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2020,
+    isAlumni: true,
+    ratings: {
+      teaching: 4, workload: 4, difficulty: 4, employment: 4, atmosphere: 4,
+      outcomes: { furtherStudy: 35, employment: 50, civilService: 15 },
+    },
+    content: "经济学训练扎实，考公和继续深造比例高；就业更多看城市选择和个人实习。",
+  });
+
+  // 学校整体就读体验
+  await seedReview({
+    authorId: sysuSophomore.id,
+    schoolId: sysu.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2025,
+    ratings: {
+      teaching: 4, workload: 4, difficulty: 3, employment: 4, atmosphere: 4,
+      outcomes: { furtherStudy: 35, employment: 50, civilService: 15 },
+    },
+    content: "中大校园资源和社团活动丰富，广州校区通勤方便，整体就读体验不错。",
+  });
+  await seedReview({
+    authorId: alumni2.id,
+    schoolId: sysu.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2018,
+    isAlumni: true,
+    ratings: {
+      teaching: 4, workload: 4, difficulty: 4, employment: 5, atmosphere: 4,
+      outcomes: { furtherStudy: 30, employment: 55, civilService: 15 },
+    },
+    content: "校友网络在广深金融圈密度高，很多岗位信息来自校友内推，就业下限比较高。",
+  });
+
+  // 课程评价：中山大学
+  await seedReview({
+    authorId: student.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: micro.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: { teaching: 4, workload: 4, difficulty: 4, grading: 4, career: 4 },
+    content: "老师讲得清楚，作业偏多，案例贴国内现实，对理解经济学很有帮助。",
+  });
+  await seedReview({
+    authorId: alumni2.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: micro.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2018,
+    isAlumni: true,
+    ratings: { teaching: 5, workload: 3, difficulty: 3, grading: 4, career: 5 },
+    content: "微观经济学是后面所有专业课的基础，建议认真吃透，就业面试也常被问到。",
+  });
+  await seedReview({
+    authorId: graduate.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: micro.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2020,
+    isAlumni: true,
+    ratings: { teaching: 4, workload: 4, difficulty: 4, grading: 4, career: 4 },
+    content: "教材和习题比较经典，期中期末都看得出平时积累，临时抱佛脚不太行。",
+  });
+  await seedReview({
+    authorId: alumni.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: micro.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2019,
+    isAlumni: true,
+    ratings: { teaching: 4, workload: 4, difficulty: 3, grading: 5, career: 5 },
+    content: "给分相对友好，认真完成作业就能拿高分；学完之后看商业新闻会更有感觉。",
+  });
+  await seedReview({
+    authorId: student.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: macro.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: { teaching: 4, workload: 3, difficulty: 3, grading: 4, career: 4 },
+    content: "宏观经济学比微观更偏政策叙事，老师会结合当下经济形势讲，课堂不枯燥。",
+  });
+  await seedReview({
+    authorId: grad.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: macro.id,
+    degreeLevel: "master",
+    enrolledYear: 2024,
+    ratings: { teaching: 5, workload: 4, difficulty: 4, grading: 4, career: 4 },
+    content: "中级宏观要求模型推导，有一定门槛；对考公和申研都有帮助。",
+  });
+  await seedReview({
+    authorId: alumni.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: macro.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2019,
+    isAlumni: true,
+    ratings: { teaching: 4, workload: 4, difficulty: 3, grading: 4, career: 4 },
+    content: "宏观框架对理解利率、汇率和行业周期很实用，工作后还经常回头翻笔记。",
+  });
+  await seedReview({
+    authorId: grad.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: econometrics.id,
+    degreeLevel: "master",
+    enrolledYear: 2024,
+    ratings: { teaching: 5, workload: 5, difficulty: 5, grading: 3, career: 4 },
+    content: "计量经济学是硬课，作业和上机都很重，但学会了数据分析能力提升很大。",
+  });
+  await seedReview({
+    authorId: alumni.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: econometrics.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2019,
+    isAlumni: true,
+    ratings: { teaching: 4, workload: 4, difficulty: 4, grading: 3, career: 5 },
+    content: "建议提前自学伍德里奇，多跑实证；这段训练对券商研究和互联网商分都加分。",
+  });
+  await seedReview({
+    authorId: sysuSophomore.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: econometrics.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2025,
+    ratings: { teaching: 4, workload: 4, difficulty: 4, grading: 3, career: 4 },
+    content: "课程安排紧凑，小组作业多，比较锻炼人；给分不算宽松。",
+  });
+  await seedReview({
+    authorId: sysuSophomore.id,
+    schoolId: sysu.id,
+    majorId: finance.id,
+    courseId: financeCourse.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2025,
+    ratings: { teaching: 4, workload: 3, difficulty: 3, grading: 4, career: 5 },
+    content: "金融学入门课，内容贴近市场，老师会讲很多真实案例，对找实习有启发。",
+  });
+  await seedReview({
+    authorId: alumni2.id,
+    schoolId: sysu.id,
+    majorId: finance.id,
+    courseId: financeCourse.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2018,
+    isAlumni: true,
+    ratings: { teaching: 4, workload: 4, difficulty: 3, grading: 4, career: 5 },
+    content: "作为金融方向入门很合适，想进券商建议同时补财报分析和估值建模。",
+  });
+  await seedReview({
+    authorId: sysuSophomore.id,
+    schoolId: sysu.id,
+    majorId: finance.id,
+    courseId: intlFinance.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2025,
+    ratings: { teaching: 5, workload: 3, difficulty: 3, grading: 4, career: 4 },
+    content: "国际金融课堂讨论多，汇率和跨境资本流动讲得清楚，案例比较新。",
+  });
+  await seedReview({
+    authorId: student.id,
+    schoolId: sysu.id,
+    majorId: finance.id,
+    courseId: intlFinance.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: { teaching: 4, workload: 3, difficulty: 3, grading: 4, career: 4 },
+    content: "课程不水但也不压分，认真看新闻就能跟上课堂节奏。",
+  });
+  await seedReview({
+    authorId: grad.id,
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: industryEco.id,
+    degreeLevel: "master",
+    enrolledYear: 2024,
+    ratings: { teaching: 4, workload: 4, difficulty: 4, grading: 4, career: 4 },
+    content: "产业经济学和导师研究方向衔接好，适合对政策研究感兴趣的同学。",
+  });
+
+  // 课程评价：厦门大学
+  await seedReview({
+    authorId: xmu.id,
+    schoolId: xmuSchool.id,
+    majorId: economics.id,
+    courseId: xmuMicro.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: { teaching: 5, workload: 4, difficulty: 4, grading: 4, career: 4 },
+    content: "中级微观讲得很细，推导要求高，认真跟下来数学和经济学直觉都会变好。",
+  });
+  await seedReview({
+    authorId: xmuAlumni.id,
+    schoolId: xmuSchool.id,
+    majorId: economics.id,
+    courseId: xmuMicro.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2020,
+    isAlumni: true,
+    ratings: { teaching: 4, workload: 4, difficulty: 4, grading: 4, career: 4 },
+    content: "课程质量扎实，教材和习题体系完整，适合想继续读研的同学。",
+  });
+  await seedReview({
+    authorId: xmu.id,
+    schoolId: xmuSchool.id,
+    majorId: economics.id,
+    courseId: xmuEconometrics.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: { teaching: 5, workload: 5, difficulty: 5, grading: 3, career: 4 },
+    content: "计量课是厦大经济系出了名的硬课，上机作业多，但收获也大。",
+  });
+  await seedReview({
+    authorId: xmuAlumni.id,
+    schoolId: xmuSchool.id,
+    majorId: economics.id,
+    courseId: xmuEconometrics.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2020,
+    isAlumni: true,
+    ratings: { teaching: 4, workload: 4, difficulty: 4, grading: 3, career: 4 },
+    content: "认真学完基本实证方法都能上手，考研复试和实习笔试都常用到。",
+  });
+  await seedReview({
+    authorId: xmu.id,
+    schoolId: xmuSchool.id,
+    majorId: finance.id,
+    courseId: xmuFinance.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: { teaching: 4, workload: 3, difficulty: 3, grading: 4, career: 5 },
+    content: "金融学入门案例多，能建立起对资本市场的初步框架。",
+  });
+  await seedReview({
+    authorId: xmuAlumni.id,
+    schoolId: xmuSchool.id,
+    majorId: finance.id,
+    courseId: xmuFinance.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2020,
+    isAlumni: true,
+    ratings: { teaching: 4, workload: 3, difficulty: 3, grading: 4, career: 4 },
+    content: "中规中矩的入门课，想往金融走建议课外多补估值和财务建模。",
+  });
+
+  // 导师/教师评价：中山大学
+  await seedReview({
+    authorId: grad.id,
+    schoolId: sysu.id,
+    teacherId: teacher.id,
+    degreeLevel: "master",
+    enrolledYear: 2024,
+    ratings: { guidance: 4, push: 3, atmosphere: 4, career: 4, resources: 4 },
+    content: "组会两周一次，研究方向偏产业政策，毕业去向有券商也有继续读博的。",
+  });
+  await seedReview({
+    authorId: student.id,
+    schoolId: sysu.id,
+    teacherId: teacher.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: { teaching: 4, patience: 4, grading: 4, guidance: 4, push: 3, atmosphere: 4, career: 4, resources: 4 },
+    content: "王教授讲课清楚，答疑耐心，产业政策方向的案例很接地气。",
+  });
+  await seedReview({
+    authorId: alumni.id,
+    schoolId: sysu.id,
+    teacherId: teacher.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2019,
+    isAlumni: true,
+    ratings: { teaching: 4, patience: 4, grading: 4, guidance: 5, push: 4, atmosphere: 4, career: 5, resources: 5 },
+    content: "毕业去向和行业资源都不错，想走产业政策和金融研究的同学可以重点关注。",
+  });
+  await seedReview({
+    authorId: sysuSophomore.id,
+    schoolId: sysu.id,
+    teacherId: zhang.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2025,
+    ratings: { teaching: 4, patience: 5, grading: 5, guidance: 3, push: 2, atmosphere: 4, career: 3, resources: 3 },
+    content: "张老师答疑非常耐心，给分友好，适合想稳扎稳打把基础打牢的同学。",
+  });
+  await seedReview({
+    authorId: alumni2.id,
+    schoolId: sysu.id,
+    teacherId: zhang.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2018,
+    isAlumni: true,
+    ratings: { teaching: 4, patience: 4, grading: 5, guidance: 3, push: 2, atmosphere: 3, career: 3, resources: 3 },
+    content: "老师人很温和，作业量适中；如果目标是就业，还是要自己主动找实习。",
+  });
+  await seedReview({
+    authorId: grad.id,
+    schoolId: sysu.id,
+    teacherId: chen.id,
+    degreeLevel: "master",
+    enrolledYear: 2024,
+    ratings: { teaching: 5, patience: 4, grading: 4, guidance: 5, push: 4, atmosphere: 5, career: 5, resources: 5 },
+    content: "陈教授课题组学术资源丰富，组会讨论质量高，适合有读博意向的同学。",
+  });
+
+  // 导师/教师评价：厦门大学
+  await seedReview({
+    authorId: xmu.id,
+    schoolId: xmuSchool.id,
+    teacherId: li.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: { teaching: 5, patience: 5, grading: 4, guidance: 4, push: 3, atmosphere: 5, career: 4, resources: 5 },
+    content: "李教授学术水平高，对学生耐心，王亚南研究院的讲座和资料资源很丰富。",
+  });
+  await seedReview({
+    authorId: xmuAlumni.id,
+    schoolId: xmuSchool.id,
+    teacherId: li.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2020,
+    isAlumni: true,
+    ratings: { teaching: 4, patience: 5, grading: 4, guidance: 4, push: 3, atmosphere: 4, career: 4, resources: 4 },
+    content: "适合想做学术的同学，导师会认真改论文；想直接就业的话自由度也比较高。",
+  });
+  await seedReview({
+    authorId: xmu.id,
+    schoolId: xmuSchool.id,
+    teacherId: zhao.id,
+    degreeLevel: "bachelor",
+    enrolledYear: 2023,
+    ratings: { teaching: 4, patience: 4, grading: 5, guidance: 3, push: 2, atmosphere: 4, career: 3, resources: 3 },
+    content: "赵老师讲课和给分都不错，课题压力小，适合本科阶段打基础。",
   });
 
   // 按公式重算所有用户 star_score 与等级，保证与演示数据一致。
@@ -489,23 +1029,70 @@ async function main() {
       await prisma.aiPost.findMany({ where: { authorId: user.id }, select: { id: true } })
     ).map((p) => p.id);
 
-    const [questionStars, replyStars, postStars, accepted] = await Promise.all([
+    const violationRows = await prisma.report.findMany({
+      where: { targetOwnerId: user.id, status: "resolved", isValid: true },
+      select: { targetType: true, targetId: true },
+    });
+    const violations = new Set(violationRows.map((row) => `${row.targetType}:${row.targetId}`)).size;
+    const [questionStars, replyStars, postStars, accepted, validReports, falseReports] = await Promise.all([
       questionIds.length
         ? prisma.contentStar.count({ where: { targetType: "question", targetId: { in: questionIds } } })
         : 0,
       replyIds.length ? prisma.contentStar.count({ where: { targetType: "reply", targetId: { in: replyIds } } }) : 0,
       postIds.length ? prisma.contentStar.count({ where: { targetType: "ai_post", targetId: { in: postIds } } }) : 0,
       prisma.reply.count({ where: { authorId: user.id, isAccepted: true } }),
+      prisma.report.count({ where: { reporterId: user.id, status: "resolved", isValid: true, rewardApplied: true } }),
+      prisma.report.count({ where: { reporterId: user.id, status: "dismissed", isValid: false } }),
     ]);
     const verified = (JSON.parse(user.verifiedSchools) as string[]).length;
-    const score = questionStars * 1 + replyStars * 2 + postStars * 5 + accepted * 10 + verified * 20;
+    const score =
+      questionStars * 1 +
+      replyStars * 2 +
+      postStars * 5 +
+      accepted * 10 +
+      verified * 20 +
+      validReports * 5 +
+      falseReports * -10 +
+      violations * -20;
     const level = score >= 800 ? 4 : score >= 300 ? 3 : score >= 100 ? 2 : score >= 30 ? 1 : 0;
     await prisma.user.update({ where: { id: user.id }, data: { starScore: score, level } });
   }
 
+  // 推荐画像种子（演示：seeker 高考生 + 中大经济学）
+  const seekerIdentity = {
+    "scenario:gaokao": 1.2,
+    "school:中山大学": 1.5,
+    "major:经济学": 1.5,
+    "region:广东": 0.8,
+  };
+  await prisma.userProfile.upsert({
+    where: { userId: seeker.id },
+    create: { userId: seeker.id, tagVector: JSON.stringify(seekerIdentity) },
+    update: { tagVector: JSON.stringify(seekerIdentity) },
+  });
+
+  // 社交演示：seeker 与 alumni 互相关注，并有一条可畅聊的会话
+  await prisma.follow.createMany({
+    data: [
+      { followerId: seeker.id, followingId: alumni.id },
+      { followerId: alumni.id, followingId: seeker.id },
+    ],
+  });
+  const [convA, convB] = [seeker.id, alumni.id].sort();
+  const demoConv = await prisma.conversation.create({
+    data: { userAId: convA, userBId: convB },
+  });
+  await prisma.message.createMany({
+    data: [
+      { conversationId: demoConv.id, senderId: seeker.id, content: "学长你好！想请教下中大经济学的就业情况，方便吗？" },
+      { conversationId: demoConv.id, senderId: alumni.id, content: "你好！可以呀，你想了解哪个方向？", readAt: new Date() },
+    ],
+  });
+
   console.log("seed done");
   console.log("提问账号: seeker@demo.uni / Test1234!");
   console.log("回答账号: alumni@demo.uni / Test1234!");
+  console.log("管理员账号: admin@demo.uni / Test1234!（可访问 /admin 审核队列）");
 }
 
 main()

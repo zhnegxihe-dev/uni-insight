@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { generateSummary } from "@/lib/ai";
 import { safeParse } from "@/lib/format";
+import { checkContentForUser, moderationErrorMessage } from "@/lib/moderation";
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -19,6 +20,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "请选择 3-30 条回复" }, { status: 400 });
   }
 
+  // 自定义标题同样过广告词库
+  if (customTitle) {
+    const check = checkContentForUser(customTitle, user.level);
+    if (!check.ok) return NextResponse.json({ error: moderationErrorMessage(check) }, { status: 400 });
+  }
+
   let questionTitle = "";
   if (questionId) {
     const question = await prisma.question.findUnique({ where: { id: questionId } });
@@ -26,6 +33,7 @@ export async function POST(request: Request) {
     questionTitle = question.title;
   }
 
+  // 仅使用可见回复作为来源（自动过滤已折叠/已隐藏的广告内容）
   const replies = await prisma.reply.findMany({
     where: {
       id: { in: rawReplyIds },

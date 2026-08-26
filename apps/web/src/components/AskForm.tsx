@@ -77,7 +77,7 @@ export function AskForm() {
       </div>
 
       {fields.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           {fields.map((field) => (
             <div key={field.name}>
               <label className="label" htmlFor={field.name}>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageSquare, Sparkles, Star } from "lucide-react";
+import { MessageSquare, ShieldAlert, Sparkles, Star } from "lucide-react";
 import { SCENARIO_LABEL } from "@/lib/core";
 import { cn, formatRelative, safeParse, truncate } from "@/lib/format";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -13,7 +13,8 @@ interface QuestionCardProps {
   replyCount: number;
   createdAt: Date;
   hasSummary: boolean;
-  tags: { id: string; name: string }[];
+  folded?: boolean;
+  tags: { id: string; name: string; slug?: string }[];
   author: { nickname: string; verifiedSchools: string; level: number };
 }
 
@@ -26,15 +27,13 @@ export function QuestionCard({
   replyCount,
   createdAt,
   hasSummary,
+  folded,
   tags,
   author,
 }: QuestionCardProps) {
   const schools = safeParse<string[]>(author.verifiedSchools, []);
   return (
-    <Link
-      href={`/question/${id}`}
-      className="card block p-5 transition-all duration-150 hover:border-zinc-300 hover:shadow-sm active:scale-[0.998]"
-    >
+    <div className="card block p-5 transition-all duration-150 hover:border-zinc-300 hover:shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="mb-1.5 flex items-center gap-2">
@@ -47,8 +46,16 @@ export function QuestionCard({
                 AI 总结
               </span>
             )}
+            {folded && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
+                <ShieldAlert className="h-3.5 w-3.5" />
+                已折叠
+              </span>
+            )}
           </div>
-          <h3 className="text-[15px] font-semibold leading-snug text-ink">{title}</h3>
+          <Link href={`/question/${id}`} className="text-[15px] font-semibold leading-snug text-ink hover:text-accent">
+            {title}
+          </Link>
           {description && (
             <p className="mt-1.5 line-clamp-2 text-sm text-zinc-500">{truncate(description, 90)}</p>
           )}
@@ -57,9 +64,19 @@ export function QuestionCard({
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         {tags.slice(0, 4).map((tag) => (
-          <span key={tag.id} className="rounded-md bg-zinc-50 px-2 py-0.5 text-xs text-zinc-600">
-            {tag.name}
-          </span>
+          tag.slug ? (
+            <Link
+              key={tag.id}
+              href={`/tag/${tag.slug}`}
+              className="rounded-md bg-zinc-50 px-2 py-0.5 text-xs text-zinc-600 transition hover:bg-blue-50 hover:text-accent"
+            >
+              {tag.name}
+            </Link>
+          ) : (
+            <span key={tag.id} className="rounded-md bg-zinc-50 px-2 py-0.5 text-xs text-zinc-600">
+              {tag.name}
+            </span>
+          )
         ))}
       </div>
 
@@ -78,6 +95,6 @@ export function QuestionCard({
         </span>
         <span>{formatRelative(createdAt)}</span>
       </div>
-    </Link>
+    </div>
   );
 }

@@ -16,16 +16,20 @@ export const SCENARIO_FIELDS: Record<
   { name: string; label: string; placeholder: string }[]
 > = {
   gaokao: [
+    { name: "province", label: "考生所在地", placeholder: "如：广东、湖南" },
     { name: "scoreBand", label: "分数/位次（可选）", placeholder: "如：600 分 / 省排 8000" },
     { name: "subjects", label: "选科（可选）", placeholder: "如：物理+化学+生物" },
     { name: "cityPref", label: "地区偏好（可选）", placeholder: "如：广东、长三角" },
   ],
   transfer: [
+    { name: "university", label: "高校名称", placeholder: "如：中山大学" },
     { name: "fromMajor", label: "原专业", placeholder: "如：工商管理" },
     { name: "targetMajor", label: "目标专业", placeholder: "如：经济学" },
     { name: "grade", label: "年级", placeholder: "如：大一" },
   ],
   grad_cn: [
+    { name: "undergradSchool", label: "本科院校名称", placeholder: "如：中山大学" },
+    { name: "targetSchool", label: "目标院校名称", placeholder: "如：厦门大学" },
     { name: "undergradLevel", label: "本科院校层次（可选）", placeholder: "如：211、双非" },
     { name: "track", label: "方向", placeholder: "学硕 / 专硕 / 保研 / 统考" },
   ],
@@ -45,6 +49,17 @@ export const SCENARIO_FIELDS: Record<
     { name: "industry", label: "行业/岗位（可选）", placeholder: "如：金融、互联网、考公" },
   ],
 };
+
+export const IDENTITY_ROLES = [
+  { key: "gaokao", label: "高考生", scenario: "高考志愿" },
+  { key: "transfer", label: "本科生（转专业）", scenario: "转专业" },
+  { key: "grad_cn", label: "考研/保研", scenario: "考研保研" },
+  { key: "grad_abroad", label: "申研/留学", scenario: "申研留学" },
+  { key: "advisor", label: "选导师", scenario: "导师选择" },
+  { key: "career", label: "就业/求职", scenario: "就业行业" },
+] as const;
+
+export type IdentityRole = (typeof IDENTITY_ROLES)[number]["key"];
 
 export const SCENARIO_LABEL: Record<ConcreteScenario, string> = {
   gaokao: "高考志愿",
@@ -81,3 +96,48 @@ export function levelForScore(score: number): number {
   if (score >= 30) return 1;
   return 0;
 }
+
+export type ReviewTarget = "school" | "major" | "course" | "teacher";
+
+export const REVIEW_DIMENSIONS: Record<
+  ReviewTarget,
+  { key: string; label: string }[]
+> = {
+  school: [
+    { key: "teaching", label: "教学" },
+    { key: "workload", label: "课业量" },
+    { key: "difficulty", label: "难度" },
+    { key: "employment", label: "就业口碑" },
+    { key: "atmosphere", label: "同学氛围" },
+  ],
+  major: [
+    { key: "teaching", label: "教学" },
+    { key: "workload", label: "课业量" },
+    { key: "difficulty", label: "难度" },
+    { key: "employment", label: "就业口碑" },
+    { key: "atmosphere", label: "同学氛围" },
+  ],
+  course: [
+    { key: "teaching", label: "教学质量" },
+    { key: "workload", label: "课业量" },
+    { key: "difficulty", label: "难度" },
+    { key: "grading", label: "给分友好度" },
+    { key: "career", label: "职业有用性" },
+  ],
+  teacher: [
+    { key: "teaching", label: "教学清晰度" },
+    { key: "patience", label: "答疑耐心" },
+    { key: "grading", label: "给分" },
+    { key: "guidance", label: "指导频率" },
+    { key: "push", label: "push 程度" },
+    { key: "atmosphere", label: "课题组氛围" },
+    { key: "career", label: "毕业去向" },
+    { key: "resources", label: "学术资源" },
+  ],
+};
+
+export const OUTCOME_LABELS: Record<string, string> = {
+  furtherStudy: "深造",
+  employment: "就业",
+  civilService: "考公",
+};
