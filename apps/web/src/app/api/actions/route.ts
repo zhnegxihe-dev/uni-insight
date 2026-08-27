@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { recordAction, type ActionType } from "@/lib/recommend";
 
-const ALLOWED: ActionType[] = ["view", "search", "star", "reply", "post", "verify"];
+const ALLOWED: ActionType[] = ["view", "search", "star", "favorite", "reply", "post", "verify"];
 
 /**
  * 行为埋点（浏览/搜索等）：

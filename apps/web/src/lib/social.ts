@@ -6,7 +6,7 @@ import { prisma } from "./prisma";
  * - 关注：Follow 表；互相关注才能自由聊天，未互关每人最多发 1 条
  */
 
-export type NotificationType = "reply" | "accept" | "star" | "follow" | "report_result" | "system";
+export type NotificationType = "reply" | "accept" | "star" | "favorite" | "follow" | "report_result" | "system";
 
 /** 创建通知（不通知自己） */
 export async function notify(userId: string, type: NotificationType, payload: Record<string, unknown>): Promise<void> {

@@ -28,12 +28,12 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
   });
   if (!profile) notFound();
 
-  const [questions, replies, posts, followerCount, followingCount] = await Promise.all([
+  const [questions, replies, posts, experiencePosts, followerCount, followingCount] = await Promise.all([
     prisma.question.findMany({
       where: { authorId: id, status: { not: "hidden" } },
       orderBy: { createdAt: "desc" },
       take: 10,
-      select: { id: true, title: true, starCount: true, replyCount: true, scenarioType: true, createdAt: true },
+      select: { id: true, title: true, starCount: true, favoriteCount: true, replyCount: true, scenarioType: true, createdAt: true },
     }),
     prisma.reply.findMany({
       where: { authorId: id, status: { not: "hidden" } },
@@ -45,7 +45,13 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
       where: { authorId: id, status: { notIn: ["hidden", "rejected"] } },
       orderBy: { createdAt: "desc" },
       take: 10,
-      select: { id: true, title: true, starCount: true, createdAt: true },
+      select: { id: true, title: true, starCount: true, favoriteCount: true, createdAt: true },
+    }),
+    prisma.experiencePost.findMany({
+      where: { authorId: id, status: { not: "hidden" } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { id: true, title: true, postType: true, likeCount: true, favoriteCount: true, createdAt: true },
     }),
     prisma.follow.count({ where: { followingId: id } }),
     prisma.follow.count({ where: { followerId: id } }),
@@ -116,7 +122,7 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
               <Link key={question.id} href={`/question/${question.id}`} className="card block px-4 py-3 hover:border-zinc-300">
                 <p className="text-sm font-medium text-ink">{question.title}</p>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {question.starCount} star · {question.replyCount} 回复 · {formatRelative(question.createdAt)}
+                  {question.starCount} 点赞 · {question.favoriteCount} 收藏 · {question.replyCount} 回复 · {formatRelative(question.createdAt)}
                 </p>
               </Link>
             ))}
@@ -155,7 +161,25 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
                   {post.title}
                 </p>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {post.starCount} star · {formatRelative(post.createdAt)}
+                  {post.starCount} 点赞 · {post.favoriteCount} 收藏 · {formatRelative(post.createdAt)}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-base font-semibold text-ink">TA 的经验帖 / 避雷帖</h2>
+        {experiencePosts.length === 0 ? (
+          <p className="text-sm text-zinc-400">还没有经验帖</p>
+        ) : (
+          <div className="space-y-2">
+            {experiencePosts.map((post) => (
+              <Link key={post.id} href={`/posts/${post.id}`} className="card block px-4 py-3 hover:border-zinc-300">
+                <p className="text-sm font-medium text-ink">{post.title}</p>
+                <p className="mt-1 text-xs text-zinc-400">
+                  {post.postType === "avoid" ? "避雷帖" : "经验帖"} · {post.likeCount} 点赞 · {post.favoriteCount} 收藏 · {formatRelative(post.createdAt)}
                 </p>
               </Link>
             ))}

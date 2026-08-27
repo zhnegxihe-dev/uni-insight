@@ -4,7 +4,8 @@ import { ChevronLeft, MessageSquare, ShieldAlert, Sparkles } from "lucide-react"
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { formatRelative, safeParse } from "@/lib/format";
-import { StarButton } from "@/components/StarButton";
+import { LikeButton } from "@/components/LikeButton";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ReportButton } from "@/components/ReportButton";
 import { FoldedContent } from "@/components/FoldedContent";
@@ -23,11 +24,18 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
   const user = await getSessionUser();
   let active = false;
+  let favorited = false;
   if (user) {
-    const star = await prisma.contentStar.findUnique({
-      where: { userId_targetType_targetId: { userId: user.id, targetType: "ai_post", targetId: post.id } },
-    });
+    const [star, fav] = await Promise.all([
+      prisma.contentStar.findUnique({
+        where: { userId_targetType_targetId: { userId: user.id, targetType: "ai_post", targetId: post.id } },
+      }),
+      prisma.contentFavorite.findUnique({
+        where: { userId_targetType_targetId: { userId: user.id, targetType: "ai_post", targetId: post.id } },
+      }),
+    ]);
     active = Boolean(star);
+    favorited = Boolean(fav);
   }
 
   const summary = safeParse<Record<string, unknown>>(post.summaryJson, {});
@@ -109,7 +117,10 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               <span className="ml-auto">{post.sourceCount} 条引用来源</span>
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-              <StarButton endpoint={`/api/ai-posts/${post.id}/star`} count={post.starCount} active={active} label="这篇精选帖有帮助" />
+              <div className="flex items-center gap-2">
+                <LikeButton endpoint={`/api/ai-posts/${post.id}/star`} count={post.starCount} active={active} label="这篇精选帖有帮助" />
+                <FavoriteButton endpoint={`/api/ai-posts/${post.id}/favorite`} count={post.favoriteCount} active={favorited} label="收藏这篇精选帖" />
+              </div>
               <ReportButton targetType="ai_post" targetId={post.id} />
             </div>
           </section>

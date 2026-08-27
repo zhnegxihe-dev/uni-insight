@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageSquare, ShieldAlert, Sparkles, Star } from "lucide-react";
+import { Bookmark, Heart, MessageSquare, ShieldAlert, Sparkles } from "lucide-react";
 import { SCENARIO_LABEL } from "@/lib/core";
 import { cn, formatRelative, safeParse, truncate } from "@/lib/format";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -9,7 +9,8 @@ interface QuestionCardProps {
   title: string;
   description?: string | null;
   scenarioType: string;
-  starCount: number;
+  likeCount: number;
+  favoriteCount: number;
   replyCount: number;
   createdAt: Date;
   hasSummary: boolean;
@@ -23,7 +24,8 @@ export function QuestionCard({
   title,
   description,
   scenarioType,
-  starCount,
+  likeCount,
+  favoriteCount,
   replyCount,
   createdAt,
   hasSummary,
@@ -63,7 +65,7 @@ export function QuestionCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        {tags.slice(0, 4).map((tag) => (
+        {tags.slice(0, 4).map((tag) =>
           tag.slug ? (
             <Link
               key={tag.id}
@@ -77,13 +79,17 @@ export function QuestionCard({
               {tag.name}
             </span>
           )
-        ))}
+        )}
       </div>
 
       <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
-        <span className="inline-flex items-center gap-1">
-          <Star className={cn("h-3.5 w-3.5", starCount > 0 ? "fill-amber-400 text-amber-400" : "text-zinc-400")} />
-          {starCount}
+        <span className="inline-flex items-center gap-1" title="点赞数">
+          <Heart className={cn("h-3.5 w-3.5", likeCount > 0 ? "fill-rose-400 text-rose-400" : "text-zinc-400")} />
+          {likeCount}
+        </span>
+        <span className="inline-flex items-center gap-1" title="收藏数">
+          <Bookmark className={cn("h-3.5 w-3.5", favoriteCount > 0 ? "fill-blue-400 text-blue-400" : "text-zinc-400")} />
+          {favoriteCount}
         </span>
         <span className="inline-flex items-center gap-1">
           <MessageSquare className="h-3.5 w-3.5 text-zinc-400" />

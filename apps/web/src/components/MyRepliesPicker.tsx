@@ -109,7 +109,7 @@ export function MyRepliesPicker({ replies }: { replies: PickerReply[] }) {
               <span className="min-w-0 flex-1">
                 <span className="mb-1 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
                   <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-accent">{reply.scenarioLabel}</span>
-                  <span className="font-medium text-zinc-600">{reply.starCount} star</span>
+                  <span className="font-medium text-zinc-600">{reply.starCount} 点赞</span>
                   <span>{formatRelative(reply.createdAt)}</span>
                 </span>
                 <span className="block text-sm leading-relaxed text-ink">{reply.content}</span>

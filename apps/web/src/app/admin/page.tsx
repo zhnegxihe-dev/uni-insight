@@ -30,9 +30,10 @@ export default async function AdminPage() {
     reply: openReports.filter((r) => r.targetType === "reply").map((r) => r.targetId),
     review: openReports.filter((r) => r.targetType === "review").map((r) => r.targetId),
     ai_post: openReports.filter((r) => r.targetType === "ai_post").map((r) => r.targetId),
+    experience_post: openReports.filter((r) => r.targetType === "experience_post").map((r) => r.targetId),
   };
 
-  const [questions, replies, reviews, aiPosts] = await Promise.all([
+  const [questions, replies, reviews, aiPosts, experiencePosts] = await Promise.all([
     ids.question.length
       ? prisma.question.findMany({ where: { id: { in: ids.question } }, select: { id: true, title: true, status: true, authorId: true } })
       : [],
@@ -45,6 +46,9 @@ export default async function AdminPage() {
     ids.ai_post.length
       ? prisma.aiPost.findMany({ where: { id: { in: ids.ai_post } }, select: { id: true, title: true, status: true, authorId: true } })
       : [],
+    ids.experience_post.length
+      ? prisma.experiencePost.findMany({ where: { id: { in: ids.experience_post } }, select: { id: true, title: true, status: true, authorId: true } })
+      : [],
   ]);
 
   const contentMap = new Map<string, { preview: string; status: string; authorId: string; questionId?: string }>();
@@ -52,6 +56,7 @@ export default async function AdminPage() {
   for (const row of replies) contentMap.set(`reply:${row.id}`, { preview: row.content, status: row.status, authorId: row.authorId, questionId: row.questionId });
   for (const row of reviews) contentMap.set(`review:${row.id}`, { preview: row.content ?? "", status: row.status, authorId: row.authorId });
   for (const row of aiPosts) contentMap.set(`ai_post:${row.id}`, { preview: row.title, status: row.status, authorId: row.authorId });
+  for (const row of experiencePosts) contentMap.set(`experience_post:${row.id}`, { preview: row.title, status: row.status, authorId: row.authorId });
 
   const reasonLabel = new Map<string, string>(REPORT_REASONS.map((r) => [r.key, r.label]));
   const statusLabel: Record<string, string> = { visible: "正常", folded: "已折叠", hidden: "已隐藏" };
@@ -97,6 +102,8 @@ export default async function AdminPage() {
                   ? `/question/${report.targetId}`
                   : type === "ai_post"
                     ? `/post/${report.targetId}`
+                    : type === "experience_post"
+                      ? `/posts/${report.targetId}`
                     : type === "reply" && target?.questionId
                       ? `/question/${target.questionId}`
                       : null;

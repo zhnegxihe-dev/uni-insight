@@ -13,7 +13,7 @@ const REASONS = [
 ] as const;
 
 interface ReportButtonProps {
-  targetType: "question" | "reply" | "review" | "ai_post";
+  targetType: "question" | "reply" | "review" | "ai_post" | "experience_post";
   targetId: string;
   compact?: boolean;
 }

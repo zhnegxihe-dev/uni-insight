@@ -1,10 +1,12 @@
 import type { Prisma } from "@prisma/client";
-import { Sparkles } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
-import { getRecommendations, hotScore } from "@/lib/recommend";
+import { getRecommendations, hotScore, hotScorePost } from "@/lib/recommend";
 import { ScenarioTabs } from "@/components/ScenarioTabs";
 import { QuestionCard } from "@/components/QuestionCard";
+import { ExperiencePostCard } from "@/components/ExperiencePostCard";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,7 @@ export default async function Home({
   }
 
   const user = await getSessionUser();
-  const [questions, recResult] = await Promise.all([
+  const [questions, recResult, experiencePosts] = await Promise.all([
     prisma.question.findMany({
       where,
       include: {
@@ -37,10 +39,20 @@ export default async function Home({
     user
       ? getRecommendations(user.id, 6)
       : Promise.resolve({ items: [], hasProfile: false, reason: null, userVector: {} }),
+    prisma.experiencePost.findMany({
+      where: { status: { not: "hidden" } },
+      include: {
+        author: { select: { nickname: true, verifiedSchools: true, level: true } },
+        school: { select: { id: true, name: true, slug: true } },
+        major: { select: { id: true, name: true, slug: true } },
+      },
+      take: 20,
+    }),
   ]);
 
-  // 各栏目内按热门推荐算法排序（star/回复加权 + 时间衰减），热门内容优先
+  // 各栏目内按热门推荐算法排序（点赞/回复加权 + 时间衰减），热门内容优先
   const sortedQuestions = [...questions].sort((a, b) => hotScore(b) - hotScore(a));
+  const sortedPosts = [...experiencePosts].sort((a, b) => hotScorePost(b) - hotScorePost(a)).slice(0, 3);
 
   const renderCard = (question: (typeof questions)[number], keyPrefix: string) => (
     <QuestionCard
@@ -49,7 +61,8 @@ export default async function Home({
       title={question.title}
       description={question.description}
       scenarioType={question.scenarioType}
-      starCount={question.starCount}
+      likeCount={question.starCount}
+      favoriteCount={question.favoriteCount}
       replyCount={question.replyCount}
       createdAt={question.createdAt}
       hasSummary={Boolean(question.aiSummary)}
@@ -63,7 +76,7 @@ export default async function Home({
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-ink">发现</h1>
-        <p className="mt-1 text-sm text-zinc-500">真实学长学姐的经验，点亮 star 让好内容被看见</p>
+        <p className="mt-1 text-sm text-zinc-500">真实学长学姐的经验，点赞让好内容被看见，收藏留住有用信息</p>
       </div>
 
       {recResult.hasProfile && recResult.items.length > 0 && (
@@ -77,6 +90,39 @@ export default async function Home({
           </div>
           <div className="space-y-3">
             {recResult.items.map(({ question }) => renderCard(question, "rec"))}
+          </div>
+        </section>
+      )}
+
+      {sortedPosts.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-accent" />
+              <h2 className="text-base font-semibold text-ink">最新经验帖</h2>
+            </div>
+            <Link href="/posts" className="text-sm text-accent hover:underline">
+              查看全部 →
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {sortedPosts.map((post) => (
+              <ExperiencePostCard
+                key={post.id}
+                id={post.id}
+                title={post.title}
+                content={post.content}
+                postType={post.postType}
+                images={JSON.parse(post.images) as string[]}
+                likeCount={post.likeCount}
+                favoriteCount={post.favoriteCount}
+                status={post.status}
+                createdAt={post.createdAt}
+                school={post.school}
+                major={post.major}
+                author={post.author}
+              />
+            ))}
           </div>
         </section>
       )}

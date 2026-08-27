@@ -15,6 +15,8 @@ async function clean() {
   await prisma.report.deleteMany();
   await prisma.schoolEmailDomain.deleteMany();
   await prisma.contentStar.deleteMany();
+  await prisma.contentFavorite.deleteMany();
+  await prisma.experiencePost.deleteMany();
   await prisma.aiPost.deleteMany();
   await prisma.aiSummary.deleteMany();
   await prisma.review.deleteMany();
@@ -368,7 +370,7 @@ async function main() {
     data: { acceptedReplyId: replies[1].id },
   });
 
-  async function seedStars(targetType: "question" | "reply" | "ai_post", targetId: string, count: number, excludeUserId?: string) {
+  async function seedStars(targetType: "question" | "reply" | "ai_post" | "experience_post", targetId: string, count: number, excludeUserId?: string) {
     const pool = users.filter((u) => u.id !== excludeUserId);
     const rows = pool.slice(0, Math.min(count, pool.length)).map((user) => ({
       userId: user.id,
@@ -376,6 +378,16 @@ async function main() {
       targetId,
     }));
     await prisma.contentStar.createMany({ data: rows });
+  }
+
+  async function seedFavorites(targetType: "question" | "reply" | "ai_post" | "experience_post", targetId: string, count: number, excludeUserId?: string) {
+    const pool = users.filter((u) => u.id !== excludeUserId);
+    const rows = pool.slice(0, Math.min(count, pool.length)).map((user) => ({
+      userId: user.id,
+      targetType,
+      targetId,
+    }));
+    await prisma.contentFavorite.createMany({ data: rows });
   }
 
   await seedStars("question", mainQuestion.id, 5);
@@ -478,6 +490,113 @@ async function main() {
     },
   });
   await seedStars("ai_post", aiPost.id, 6);
+
+  // v4.4 演示：收藏（收藏是独立的“有用”信号，不计入 star_score）
+  await prisma.question.update({ where: { id: mainQuestion.id }, data: { favoriteCount: 4 } });
+  await seedFavorites("question", mainQuestion.id, 4);
+  await prisma.aiPost.update({ where: { id: aiPost.id }, data: { favoriteCount: 3 } });
+  await seedFavorites("ai_post", aiPost.id, 3);
+  const replyFavSeeds = [
+    { index: 0, count: 3 },
+    { index: 1, count: 4 },
+    { index: 5, count: 2 },
+  ];
+  for (const item of replyFavSeeds) {
+    const reply = replies[item.index];
+    if (reply) {
+      await prisma.reply.update({ where: { id: reply.id }, data: { favoriteCount: item.count } });
+      await seedFavorites("reply", reply.id, item.count, reply.authorId);
+    }
+  }
+
+  // v4.4 演示：经验帖 / 避雷帖（轻量内容形态 + 配图字段）
+  async function seedExperiencePost(input: {
+    authorId: string;
+    title: string;
+    content: string;
+    postType: "experience" | "avoid";
+    scenarioType?: string | null;
+    schoolId?: string | null;
+    majorId?: string | null;
+    courseId?: string | null;
+    teacherId?: string | null;
+    images?: string[];
+    likeCount: number;
+    favoriteCount: number;
+  }) {
+    const post = await prisma.experiencePost.create({
+      data: {
+        authorId: input.authorId,
+        title: input.title,
+        content: input.content,
+        postType: input.postType,
+        scenarioType: input.scenarioType ?? null,
+        schoolId: input.schoolId ?? null,
+        majorId: input.majorId ?? null,
+        courseId: input.courseId ?? null,
+        teacherId: input.teacherId ?? null,
+        images: JSON.stringify(input.images ?? []),
+        likeCount: input.likeCount,
+        favoriteCount: input.favoriteCount,
+      },
+    });
+    await seedStars("experience_post", post.id, input.likeCount, input.authorId);
+    await seedFavorites("experience_post", post.id, input.favoriteCount, input.authorId);
+    return post;
+  }
+
+  await seedExperiencePost({
+    authorId: alumni.id,
+    title: "中大经济学四年真实就读体验：课程、实习与就业",
+    content:
+      "大一高数线代打基础，大二微观宏观+计量，课程偏理论但训练很扎实。\n\n想进金融圈一定要自己补实习：大二暑假开始找，秋招前至少两段相关经历。就业主要去向是银行、券商、咨询和考公，研究生学历对进头部岗位帮助明显。\n\n给高考生的建议：如果目标是珠三角金融圈，中大经济学的校友网络是很实际的资源；如果更想做学术，可以多看看厦大王亚南研究院。",
+    postType: "experience",
+    scenarioType: "gaokao",
+    schoolId: sysu.id,
+    majorId: economics.id,
+    likeCount: 8,
+    favoriteCount: 5,
+  });
+
+  await seedExperiencePost({
+    authorId: student.id,
+    title: "避雷：计量经济学选课前，先搞清楚这三件事",
+    content:
+      "1. 数学要求比想象高，高数线代概率论没学扎实会很吃力；\n2. 建议提前看伍德里奇，光靠听课跟不上；\n3. 小组作业很多，找靠谱队友很重要，别等到期末才组队。\n\n如果有转专业或保研打算，计量成绩很关键，别选在最忙的学期。",
+    postType: "avoid",
+    scenarioType: "transfer",
+    schoolId: sysu.id,
+    majorId: economics.id,
+    courseId: econometrics.id,
+    likeCount: 6,
+    favoriteCount: 4,
+  });
+
+  await seedExperiencePost({
+    authorId: grad.id,
+    title: "考研上岸中大经济学：我的时间线与踩坑总结",
+    content:
+      "3 月开始准备，专业课重点是中级宏观和中级微观，数学按数三难度准备。\n\n踩过的坑：真题很重要，但更要把课本吃透；别迷信押题。\n\n复试看综合能力和英语，建议平时多练表达。保研的同学成绩前 20% 左右有机会，科研经历是加分项。",
+    postType: "experience",
+    scenarioType: "grad_cn",
+    schoolId: sysu.id,
+    majorId: economics.id,
+    likeCount: 5,
+    favoriteCount: 3,
+  });
+
+  await seedExperiencePost({
+    authorId: xmu.id,
+    title: "中大 vs 厦大经济学：两所学校都接触过的真实对比",
+    content:
+      "厦大经济学科沉淀更久，学术氛围浓，王亚南研究院的计量训练很硬核；中大胜在大湾区的实习便利和校友网络。\n\n想就业留广东选中大，想走学术可以多看厦大。两边课程都偏理论，具体岗位技能都要自己补。",
+    postType: "experience",
+    scenarioType: "gaokao",
+    schoolId: xmuSchool.id,
+    majorId: economics.id,
+    likeCount: 4,
+    favoriteCount: 3,
+  });
 
   async function seedQuestion(
     title: string,

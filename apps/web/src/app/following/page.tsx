@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { formatRelative, safeParse } from "@/lib/format";
 import { QuestionCard } from "@/components/QuestionCard";
+import { ExperiencePostCard } from "@/components/ExperiencePostCard";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,19 @@ export default async function FollowingPage() {
         },
         orderBy: { createdAt: "desc" },
         take: 30,
+      })
+    : [];
+
+  const experiencePosts = followingIds.length
+    ? await prisma.experiencePost.findMany({
+        where: { authorId: { in: followingIds }, status: { not: "hidden" } },
+        include: {
+          author: { select: { nickname: true, verifiedSchools: true, level: true } },
+          school: { select: { id: true, name: true, slug: true } },
+          major: { select: { id: true, name: true, slug: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
       })
     : [];
 
@@ -73,6 +87,31 @@ export default async function FollowingPage() {
             </div>
           </section>
 
+          {experiencePosts.length > 0 && (
+            <section>
+              <h2 className="mb-3 mt-6 text-base font-semibold text-ink">TA 们的最新经验帖</h2>
+              <div className="space-y-3">
+                {experiencePosts.map((post) => (
+                  <ExperiencePostCard
+                    key={post.id}
+                    id={post.id}
+                    title={post.title}
+                    content={post.content}
+                    postType={post.postType}
+                    images={JSON.parse(post.images) as string[]}
+                    likeCount={post.likeCount}
+                    favoriteCount={post.favoriteCount}
+                    status={post.status}
+                    createdAt={post.createdAt}
+                    school={post.school}
+                    major={post.major}
+                    author={post.author}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           <section>
             <h2 className="mb-3 text-base font-semibold text-ink">TA 们的最新提问</h2>
             {questions.length === 0 ? (
@@ -86,7 +125,8 @@ export default async function FollowingPage() {
                     title={question.title}
                     description={question.description}
                     scenarioType={question.scenarioType}
-                    starCount={question.starCount}
+                    likeCount={question.starCount}
+                    favoriteCount={question.favoriteCount}
                     replyCount={question.replyCount}
                     createdAt={question.createdAt}
                     hasSummary={Boolean(question.aiSummary)}

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Bell, CheckCircle2, MessageSquare, Sparkles, Star, UserPlus, XCircle } from "lucide-react";
+import { Bell, Bookmark, CheckCircle2, Heart, MessageSquare, Sparkles, UserPlus, XCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { formatRelative, safeParse } from "@/lib/format";
@@ -26,7 +26,9 @@ function NotificationRow({ item }: { item: NotificationItem }) {
       : payload.conversationId && typeof payload.conversationId === "string"
         ? `/messages/${payload.conversationId}`
         : payload.postId && typeof payload.postId === "string"
-          ? `/post/${payload.postId}`
+          ? payload.postKind === "experience_post"
+            ? `/posts/${payload.postId}`
+            : `/post/${payload.postId}`
           : payload.actorId && typeof payload.actorId === "string"
             ? `/user/${payload.actorId}`
             : null;
@@ -43,8 +45,12 @@ function NotificationRow({ item }: { item: NotificationItem }) {
       text = `${item.actorName} 采纳了你的回复（问题「${String(payload.questionTitle ?? "")}」）`;
       break;
     case "star":
-      icon = <Star className="h-4 w-4 text-amber-500" />;
-      text = `${item.actorName} 点亮了你的${payload.questionId ? "提问" : payload.postId ? "AI 精选帖" : "回复"}`;
+      icon = <Heart className="h-4 w-4 text-rose-500" />;
+      text = `${item.actorName} 点赞了你的${payload.questionId ? "提问" : payload.postId ? (payload.postKind === "experience_post" ? "经验帖" : "AI 精选帖") : "回复"}`;
+      break;
+    case "favorite":
+      icon = <Bookmark className="h-4 w-4 text-blue-500" />;
+      text = `${item.actorName} 收藏了你的${payload.questionId ? "提问" : payload.postId ? (payload.postKind === "experience_post" ? "经验帖" : "AI 精选帖") : "回复"}`;
       break;
     case "follow":
       icon = <UserPlus className="h-4 w-4 text-accent" />;
@@ -52,7 +58,7 @@ function NotificationRow({ item }: { item: NotificationItem }) {
       break;
     case "report_result":
       icon = payload.valid ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-red-500" />;
-      text = payload.valid ? "你的举报已被确认有效，感谢你维护社区（+5 star）" : "你的举报被驳回（-10 star），请勿恶意举报";
+      text = payload.valid ? "你的举报已被确认有效，感谢你维护社区（+5 积分）" : "你的举报被驳回（-10 积分），请勿恶意举报";
       break;
     case "message":
       icon = <MessageSquare className="h-4 w-4 text-accent" />;

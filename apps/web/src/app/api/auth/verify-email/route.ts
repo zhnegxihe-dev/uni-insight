@@ -54,6 +54,6 @@ export async function POST(request: Request) {
     verifiedSchools: current,
     starScore: score,
     level,
-    message: `已认证「${entry.school.name}」，+20 star 分（一次性奖励）`,
+    message: `已认证「${entry.school.name}」，+20 积分（一次性奖励）`,
   });
 }

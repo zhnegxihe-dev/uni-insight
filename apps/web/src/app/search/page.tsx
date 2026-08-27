@@ -16,11 +16,11 @@ export default async function SearchPage({
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
 
-  const [questions, schools, majors, courses, teachers, posts] = await Promise.all([
+  const [questions, schools, majors, courses, teachers, posts, experiencePosts] = await Promise.all([
     query
       ? prisma.question.findMany({
           where: { status: { not: "hidden" }, OR: [{ title: { contains: query } }, { description: { contains: query } }] },
-          select: { id: true, title: true, description: true, replyCount: true, starCount: true },
+          select: { id: true, title: true, description: true, replyCount: true, starCount: true, favoriteCount: true },
           orderBy: [{ starCount: "desc" }, { createdAt: "desc" }],
           take: 10,
         })
@@ -64,6 +64,7 @@ export default async function SearchPage({
             title: true,
             summaryJson: true,
             starCount: true,
+            favoriteCount: true,
             createdAt: true,
             author: { select: { nickname: true } },
           },
@@ -71,9 +72,26 @@ export default async function SearchPage({
           take: 6,
         })
       : [],
+    query
+      ? prisma.experiencePost.findMany({
+          where: { status: { not: "hidden" }, OR: [{ title: { contains: query } }, { content: { contains: query } }] },
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            postType: true,
+            likeCount: true,
+            favoriteCount: true,
+            createdAt: true,
+            author: { select: { nickname: true } },
+          },
+          orderBy: [{ likeCount: "desc" }, { createdAt: "desc" }],
+          take: 6,
+        })
+      : [],
   ]);
 
-  const total = questions.length + schools.length + majors.length + courses.length + teachers.length + posts.length;
+  const total = questions.length + schools.length + majors.length + courses.length + teachers.length + posts.length + experiencePosts.length;
   const searchTags = query ? await parseSearchQuery(query) : [];
 
   return (
@@ -160,11 +178,30 @@ export default async function SearchPage({
                 {overview ? <Highlight text={overview} query={query} /> : "AI 整合的真实经验总结"}
               </p>
               <p className="mt-1 text-xs text-zinc-400">
-                {post.author.nickname} · {post.starCount} star · {formatRelative(post.createdAt)}
+                {post.author.nickname} · {post.starCount} 点赞 · {post.favoriteCount} 收藏 · {formatRelative(post.createdAt)}
               </p>
             </Link>
           );
         })}
+      </Group>
+
+      <Group title="经验帖" count={experiencePosts.length}>
+        {experiencePosts.map((post) => (
+          <Link key={post.id} href={`/posts/${post.id}`} className="card block px-4 py-3 hover:border-zinc-300">
+            <p className="text-sm font-medium text-ink">
+              <span className={post.postType === "avoid" ? "mr-1.5 rounded bg-red-50 px-1 py-0.5 text-[11px] font-medium text-red-600" : "mr-1.5 rounded bg-blue-50 px-1 py-0.5 text-[11px] font-medium text-accent"}>
+                {post.postType === "avoid" ? "避雷帖" : "经验帖"}
+              </span>
+              <Highlight text={post.title} query={query} />
+            </p>
+            <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
+              <Highlight text={post.content} query={query} />
+            </p>
+            <p className="mt-1 text-xs text-zinc-400">
+              {post.author.nickname} · {post.likeCount} 点赞 · {post.favoriteCount} 收藏 · {formatRelative(post.createdAt)}
+            </p>
+          </Link>
+        ))}
       </Group>
 
       <Group title="问题" count={questions.length}>
@@ -179,7 +216,7 @@ export default async function SearchPage({
               </p>
             )}
             <p className="mt-1 text-xs text-zinc-400">
-              {question.starCount} star · {question.replyCount} 回复
+              {question.starCount} 点赞 · {question.favoriteCount} 收藏 · {question.replyCount} 回复
             </p>
           </Link>
         ))}

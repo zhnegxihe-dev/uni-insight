@@ -22,13 +22,14 @@ export async function GET() {
     reply: [] as string[],
     review: [] as string[],
     ai_post: [] as string[],
+    experience_post: [] as string[],
   };
   for (const report of reports) {
     const type = report.targetType as ReportTargetType;
     if (ids[type]) ids[type].push(report.targetId);
   }
 
-  const [questions, replies, reviews, aiPosts] = await Promise.all([
+  const [questions, replies, reviews, aiPosts, experiencePosts] = await Promise.all([
     ids.question.length
       ? prisma.question.findMany({ where: { id: { in: ids.question } }, select: { id: true, title: true, status: true, authorId: true } })
       : [],
@@ -41,6 +42,9 @@ export async function GET() {
     ids.ai_post.length
       ? prisma.aiPost.findMany({ where: { id: { in: ids.ai_post } }, select: { id: true, title: true, status: true, authorId: true } })
       : [],
+    ids.experience_post.length
+      ? prisma.experiencePost.findMany({ where: { id: { in: ids.experience_post } }, select: { id: true, title: true, status: true, authorId: true } })
+      : [],
   ]);
 
   const contentMap = new Map<string, { preview: string; status: string; authorId: string; questionId?: string }>();
@@ -48,6 +52,7 @@ export async function GET() {
   for (const row of replies) contentMap.set(`reply:${row.id}`, { preview: row.content, status: row.status, authorId: row.authorId, questionId: row.questionId });
   for (const row of reviews) contentMap.set(`review:${row.id}`, { preview: row.content ?? "", status: row.status, authorId: row.authorId });
   for (const row of aiPosts) contentMap.set(`ai_post:${row.id}`, { preview: row.title, status: row.status, authorId: row.authorId });
+  for (const row of experiencePosts) contentMap.set(`experience_post:${row.id}`, { preview: row.title, status: row.status, authorId: row.authorId });
 
   const reasonLabel = new Map<string, string>(REPORT_REASONS.map((r) => [r.key, r.label]));
 

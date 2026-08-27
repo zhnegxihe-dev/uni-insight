@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, GraduationCap, LogOut, MessageSquare, Plus, Search, Settings, ShieldCheck } from "lucide-react";
+import { Bell, BookOpen, GraduationCap, LogOut, MessageSquare, Plus, Search, Settings, ShieldCheck } from "lucide-react";
 import { getSessionUser } from "@/lib/auth";
 import { getUnreadCounts } from "@/lib/social";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -28,8 +28,11 @@ export async function Header() {
           <Link href="/following" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
             关注
           </Link>
+          <Link href="/posts" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
+            经验帖
+          </Link>
           <Link href="/levels" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
-            Star 等级
+            积分等级
           </Link>
           <Link href="/compare" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
             学校对比

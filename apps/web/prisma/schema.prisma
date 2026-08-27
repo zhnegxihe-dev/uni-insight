@@ -26,7 +26,9 @@ model User {
   replies   Reply[]
   stars     ContentStar[]
   reviews   Review[]
-  aiPosts   AiPost[]
+  aiPosts         AiPost[]
+  experiencePosts ExperiencePost[]
+  favorites       ContentFavorite[]
   reports   Report[]
   actions       UserAction[]
   profile       UserProfile?
@@ -50,6 +52,7 @@ model School {
   courses  Course[]
   teachers Teacher[]
   reviews  Review[]
+  experiencePosts ExperiencePost[]
   domains  SchoolEmailDomain[]
 }
 
@@ -71,8 +74,8 @@ model Major {
 
   courses Course[]
   reviews Review[]
+  experiencePosts ExperiencePost[]
 }
-
 model Course {
   id       String  @id @default(cuid())
   schoolId String
@@ -83,10 +86,10 @@ model Course {
   school  School   @relation(fields: [schoolId], references: [id])
   major   Major?   @relation(fields: [majorId], references: [id])
   reviews Review[]
+  experiencePosts ExperiencePost[]
 
   @@unique([schoolId, code])
 }
-
 model Teacher {
   id         String  @id @default(cuid())
   schoolId   String
@@ -96,8 +99,8 @@ model Teacher {
 
   school  School   @relation(fields: [schoolId], references: [id])
   reviews Review[]
+  experiencePosts ExperiencePost[]
 }
-
 model Question {
   id              String   @id @default(cuid())
   title           String
@@ -107,7 +110,8 @@ model Question {
   scenarioMeta    String   @default("{}") // JSON
   degreeLevel     String?
   replyCount      Int      @default(0)
-  starCount       Int      @default(0)
+  starCount       Int      @default(0) // 点赞数（原 star，语义改为点赞）
+  favoriteCount   Int      @default(0)
   acceptedReplyId String?
   isLocked        Boolean  @default(false)
   status          String   @default("visible") // visible | folded | hidden
@@ -126,7 +130,8 @@ model Reply {
   questionId String
   authorId   String
   content    String
-  starCount  Int      @default(0)
+  starCount  Int      @default(0) // 点赞数
+  favoriteCount Int   @default(0)
   isAccepted Boolean  @default(false)
   status     String   @default("visible") // visible | folded | hidden
   createdAt  DateTime @default(now())
@@ -138,7 +143,7 @@ model Reply {
 model ContentStar {
   id         String   @id @default(cuid())
   userId     String
-  targetType String // question | reply | ai_post
+  targetType String // question | reply | ai_post | experience_post（点赞）
   targetId   String
   weight     Float    @default(1)
   createdAt  DateTime @default(now())
@@ -148,6 +153,18 @@ model ContentStar {
   @@unique([userId, targetType, targetId])
 }
 
+model ContentFavorite {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String // question | reply | ai_post | experience_post
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+}
 model Tag {
   id          String  @id @default(cuid())
   name        String
@@ -212,7 +229,8 @@ model AiPost {
   summaryJson      String
   selectedReplyIds String    @default("[]") // JSON
   sourceCount      Int       @default(0)
-  starCount        Int       @default(0)
+  starCount        Int       @default(0) // 点赞数
+  favoriteCount    Int       @default(0)
   isHumanEdited    Boolean   @default(false)
   status           String    @default("published") // published | reviewing | rejected | folded | hidden
   createdAt        DateTime  @default(now())
@@ -319,4 +337,32 @@ model Report {
   @@unique([reporterId, targetType, targetId])
   @@index([status])
   @@index([targetType, targetId])
+}
+
+model ExperiencePost {
+  id            String   @id @default(cuid())
+  authorId      String
+  title         String
+  content       String
+  postType      String
+  scenarioType  String?
+  schoolId      String?
+  majorId       String?
+  courseId      String?
+  teacherId     String?
+  images        String   @default("[]") // JSON: string[]（压缩后 data URL）
+  likeCount     Int      @default(0)
+  favoriteCount Int      @default(0)
+  status        String   @default("visible") // visible | folded | hidden
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  author  User    @relation(fields: [authorId], references: [id])
+  school  School? @relation(fields: [schoolId], references: [id])
+  major   Major?  @relation(fields: [majorId], references: [id])
+  course  Course? @relation(fields: [courseId], references: [id])
+  teacher Teacher? @relation(fields: [teacherId], references: [id])
+
+  @@index([postType, status])
+  @@index([authorId, createdAt])
 }

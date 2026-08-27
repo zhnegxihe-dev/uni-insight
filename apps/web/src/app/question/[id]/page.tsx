@@ -5,7 +5,8 @@ import { SCENARIO_LABEL } from "@/lib/core";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { formatRelative, safeParse } from "@/lib/format";
-import { StarButton } from "@/components/StarButton";
+import { LikeButton } from "@/components/LikeButton";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { ReplyComposer } from "@/components/ReplyComposer";
 import { AiSummaryCard } from "@/components/AiSummaryCard";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -41,13 +42,21 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
   const schoolSlugByName = new Map(schoolSlugs.map((school) => [school.name, school.slug]));
   const majorSlugByName = new Map(majorSlugs.map((major) => [major.name, major.slug]));
   let starred = new Set<string>();
+  let favorited = new Set<string>();
   if (user) {
     const targetIds = [question.id, ...question.replies.map((reply) => reply.id)];
-    const stars = await prisma.contentStar.findMany({
-      where: { userId: user.id, targetId: { in: targetIds } },
-      select: { targetType: true, targetId: true },
-    });
+    const [stars, favs] = await Promise.all([
+      prisma.contentStar.findMany({
+        where: { userId: user.id, targetId: { in: targetIds } },
+        select: { targetType: true, targetId: true },
+      }),
+      prisma.contentFavorite.findMany({
+        where: { userId: user.id, targetId: { in: targetIds } },
+        select: { targetType: true, targetId: true },
+      }),
+    ]);
     starred = new Set(stars.map((star) => `${star.targetType}:${star.targetId}`));
+    favorited = new Set(favs.map((fav) => `${fav.targetType}:${fav.targetId}`));
   }
 
   const authorSchools = safeParse<string[]>(question.author.verifiedSchools, []);
@@ -113,12 +122,20 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
             <span className="ml-auto">{question.replyCount} 条回复</span>
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-            <StarButton
-              endpoint={`/api/questions/${question.id}/star`}
-              count={question.starCount}
-              active={starred.has(`question:${question.id}`)}
-              label="问题有帮助，点亮 star"
-            />
+            <div className="flex items-center gap-2">
+              <LikeButton
+                endpoint={`/api/questions/${question.id}/star`}
+                count={question.starCount}
+                active={starred.has(`question:${question.id}`)}
+                label="问题有帮助，点赞"
+              />
+              <FavoriteButton
+                endpoint={`/api/questions/${question.id}/favorite`}
+                count={question.favoriteCount}
+                active={favorited.has(`question:${question.id}`)}
+                label="收藏这个问题"
+              />
+            </div>
             <ReportButton targetType="question" targetId={question.id} />
           </div>
         </section>
@@ -174,12 +191,20 @@ export default async function QuestionPage({ params }: { params: Promise<{ id: s
                           accepted={reply.isAccepted}
                           canAccept={user?.id === question.author.id}
                         />
-                        <StarButton
-                          endpoint={`/api/replies/${reply.id}/star`}
-                          count={reply.starCount}
-                          active={starred.has(`reply:${reply.id}`)}
-                          label="这条回复有帮助"
-                        />
+                        <div className="flex items-center gap-1.5">
+                          <LikeButton
+                            endpoint={`/api/replies/${reply.id}/star`}
+                            count={reply.starCount}
+                            active={starred.has(`reply:${reply.id}`)}
+                            label="这条回复有帮助"
+                          />
+                          <FavoriteButton
+                            endpoint={`/api/replies/${reply.id}/favorite`}
+                            count={reply.favoriteCount}
+                            active={favorited.has(`reply:${reply.id}`)}
+                            label="收藏这条回复"
+                          />
+                        </div>
                         <ReportButton targetType="reply" targetId={reply.id} compact />
                       </div>
                     </div>

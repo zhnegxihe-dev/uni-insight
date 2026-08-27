@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { createReport, REPORT_REASONS, type ReportTargetType } from "@/lib/reports";
 
-const TARGET_TYPES: ReportTargetType[] = ["question", "reply", "review", "ai_post"];
+const TARGET_TYPES: ReportTargetType[] = ["question", "reply", "review", "ai_post", "experience_post"];
 
 export async function POST(request: Request) {
   const user = await getSessionUser();

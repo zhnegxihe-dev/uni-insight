@@ -85,7 +85,8 @@ export default async function TagPage({ params }: { params: Promise<{ slug: stri
                 title={question.title}
                 description={question.description}
                 scenarioType={question.scenarioType}
-                starCount={question.starCount}
+                likeCount={question.starCount}
+                favoriteCount={question.favoriteCount}
                 replyCount={question.replyCount}
                 createdAt={question.createdAt}
                 hasSummary={Boolean(question.aiSummary)}

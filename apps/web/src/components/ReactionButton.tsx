@@ -1,18 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { Star } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/format";
 
-interface StarButtonProps {
+interface ReactionButtonProps {
   endpoint: string;
   count: number;
   active: boolean;
-  label?: string;
+  label: string;
+  icon: LucideIcon;
+  activeClass: string;
+  activeIconClass: string;
+  idleIconClass?: string;
 }
 
-export function StarButton({ endpoint, count, active, label }: StarButtonProps) {
+/** 通用互动按钮（点赞/收藏共用）：乐观更新 + 401 跳登录 + 服务端确认 */
+export function ReactionButton({
+  endpoint,
+  count,
+  active,
+  label,
+  icon: Icon,
+  activeClass,
+  activeIconClass,
+  idleIconClass = "text-zinc-400",
+}: ReactionButtonProps) {
   const [value, setValue] = useState(count);
   const [on, setOn] = useState(active);
   const [busy, setBusy] = useState(false);
@@ -50,15 +64,15 @@ export function StarButton({ endpoint, count, active, label }: StarButtonProps) 
       onClick={toggle}
       className={cn(
         "inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-all duration-150 active:scale-90",
-        on ? "bg-amber-50 text-amber-600" : "text-zinc-500 hover:bg-zinc-50 hover:text-ink"
+        on ? activeClass : "text-zinc-500 hover:bg-zinc-50 hover:text-ink"
       )}
-      title={label ?? "点亮 star"}
+      title={label}
       aria-pressed={on}
     >
-      <Star
+      <Icon
         className={cn(
           "h-4 w-4 transition-all duration-150",
-          on ? "scale-110 fill-amber-400 text-amber-400" : "text-zinc-400"
+          on ? `scale-110 ${activeIconClass}` : idleIconClass
         )}
       />
       {value}

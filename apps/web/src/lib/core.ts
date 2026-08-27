@@ -70,11 +70,18 @@ export const SCENARIO_LABEL: Record<ConcreteScenario, string> = {
   career: "就业行业",
 };
 
+export const POST_TYPES = [
+  { key: "experience", label: "经验帖", hint: "分享真实就读 / 申请 / 求职经验" },
+  { key: "avoid", label: "避雷帖", hint: "提醒踩过的坑，帮后来人避雷" },
+] as const;
+export type ExperiencePostType = (typeof POST_TYPES)[number]["key"];
+
 export const STAR_RULES = [
-  { key: "question", label: "我发布的提问被 star", weight: 1 },
-  { key: "reply", label: "我发布的回复被 star", weight: 2 },
+  { key: "question", label: "我发布的提问被点赞", weight: 1 },
+  { key: "reply", label: "我发布的回复被点赞", weight: 2 },
   { key: "accepted", label: "回复被采纳", weight: 10 },
-  { key: "aiPost", label: "AI 精选帖被 star", weight: 5 },
+  { key: "aiPost", label: "AI 精选帖被点赞", weight: 5 },
+  { key: "experiencePost", label: "我发布的经验帖/避雷帖被点赞", weight: 3 },
   { key: "validReport", label: "有效举报中介/广告", weight: 5 },
   { key: "verifiedSchool", label: "学校邮箱认证", weight: 20 },
   { key: "falseReport", label: "恶意/无效举报", weight: -10 },

@@ -15,13 +15,14 @@ export interface IdentityInput {
   region?: string;
 }
 
-export type ActionType = "view" | "search" | "star" | "reply" | "post" | "verify";
+export type ActionType = "view" | "search" | "star" | "favorite" | "reply" | "post" | "verify";
 
 const SEED_WEIGHTS: Record<string, number> = { scenario: 1.2, school: 1.5, major: 1.5, region: 0.8 };
 const ACTION_WEIGHTS: Record<ActionType, number> = {
   view: 0.3,
   search: 0.5,
   star: 1.0,
+  favorite: 2.0,
   reply: 1.5,
   post: 1.5,
   verify: 1.0,
@@ -63,6 +64,20 @@ export function tagsOfQuestion(question: {
   return Array.from(new Set(tags));
 }
 
+export function tagsOfExperiencePost(post: {
+  scenarioType?: string | null;
+  postType?: string;
+  school?: { name: string } | null;
+  major?: { name: string } | null;
+}): string[] {
+  const tags: string[] = [];
+  if (post.scenarioType) tags.push(`scenario:${post.scenarioType}`);
+  if (post.school?.name) tags.push(`school:${post.school.name}`);
+  if (post.major?.name) tags.push(`major:${post.major.name}`);
+  if (post.postType === "avoid") tags.push("kw:避雷");
+  return Array.from(new Set(tags));
+}
+
 /** 内容向量（等权重，命中次数累加） */
 export function questionVector(tags: string[]): Record<string, number> {
   const vector: Record<string, number> = {};
@@ -88,6 +103,12 @@ export function cosine(a: Record<string, number>, b: Record<string, number>): nu
 export function hotScore(question: { starCount: number; replyCount: number; createdAt: Date }): number {
   const ageHours = Math.max(0.1, (Date.now() - question.createdAt.getTime()) / 3_600_000);
   return (question.starCount * 3 + question.replyCount * 2) / Math.pow(ageHours + 2, 1.5);
+}
+
+/** 经验帖热度分：收藏是比点赞更强的“有用”信号，权重更高 */
+export function hotScorePost(post: { likeCount: number; favoriteCount: number; createdAt: Date }): number {
+  const ageHours = Math.max(0.1, (Date.now() - post.createdAt.getTime()) / 3_600_000);
+  return (post.likeCount * 3 + post.favoriteCount * 4) / Math.pow(ageHours + 2, 1.5);
 }
 
 export interface RecordActionInput {

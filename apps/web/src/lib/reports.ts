@@ -19,7 +19,7 @@ export const REPORT_REASONS = [
 ] as const;
 
 export type ReportReason = (typeof REPORT_REASONS)[number]["key"];
-export type ReportTargetType = "question" | "reply" | "review" | "ai_post";
+export type ReportTargetType = "question" | "reply" | "review" | "ai_post" | "experience_post";
 
 export const FOLD_THRESHOLD = 3;
 export const DAILY_REPORT_LIMIT = 20;
@@ -33,6 +33,7 @@ export const REPORT_TARGET_LABEL: Record<ReportTargetType, string> = {
   reply: "回复",
   review: "评价",
   ai_post: "AI 精选帖",
+  experience_post: "经验帖/避雷帖",
 };
 
 interface TargetContent {
@@ -74,6 +75,13 @@ export async function getTargetContent(
       });
       return row ? { ownerId: row.authorId, content: row.title } : null;
     }
+    case "experience_post": {
+      const row = await prisma.experiencePost.findUnique({
+        where: { id: targetId },
+        select: { authorId: true, title: true },
+      });
+      return row ? { ownerId: row.authorId, content: row.title } : null;
+    }
     default:
       return null;
   }
@@ -96,6 +104,9 @@ export async function updateTargetStatus(
       break;
     case "ai_post":
       await prisma.aiPost.update({ where: { id: targetId }, data: { status } });
+      break;
+    case "experience_post":
+      await prisma.experiencePost.update({ where: { id: targetId }, data: { status } });
       break;
   }
 }

@@ -1,13 +1,13 @@
 import { LEVELS, STAR_RULES } from "@/lib/core";
 
-export const metadata = { title: "Star 等级 - UniInsight" };
+export const metadata = { title: "积分等级 - UniInsight" };
 
 export default function LevelsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h1 className="text-xl font-semibold text-ink">Star 评分与等级</h1>
-        <p className="mt-1 text-sm text-zinc-500">点亮 star，让真实经验获得应有的认可</p>
+        <h1 className="text-xl font-semibold text-ink">积分等级</h1>
+        <p className="mt-1 text-sm text-zinc-500">点赞让真实经验获得认可，收藏留住有用信息，star_score 由点赞/采纳/认证等累计</p>
       </div>
 
       <section>
