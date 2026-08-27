@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, CheckCircle2, MessageSquare, Star, UserPlus, XCircle } from "lucide-react";
+import { Bell, Bookmark, CheckCircle2, Heart, MessageSquare, UserPlus, XCircle } from "lucide-react";
 import { useDb, act } from "../store";
 import * as db from "../db";
 
@@ -26,8 +26,12 @@ export default function Notifications() {
         text = `${actorName} 采纳了你的回复`;
         break;
       case "star":
-        icon = <Star className="h-4 w-4 text-amber-500" />;
-        text = `${actorName} 点亮了你的内容`;
+        icon = <Heart className="h-4 w-4 text-rose-500" />;
+        text = `${actorName} 点赞了你的内容`;
+        break;
+      case "favorite":
+        icon = <Bookmark className="h-4 w-4 text-blue-500" />;
+        text = `${actorName} 收藏了你的内容`;
         break;
       case "follow":
         icon = <UserPlus className="h-4 w-4 text-accent" />;
@@ -74,7 +78,7 @@ export default function Notifications() {
       {items.length === 0 ? (
         <div className="card p-10 text-center">
           <Bell className="mx-auto mb-2 h-8 w-8 text-zinc-300" />
-          <p className="text-sm text-zinc-400">还没有通知。有人回复、采纳、点亮或关注你时会出现在这里</p>
+          <p className="text-sm text-zinc-400">还没有通知。有人回复、采纳、点赞、收藏或关注你时会出现在这里</p>
         </div>
       ) : (
         <div className="space-y-2">{items.map(renderRow)}</div>

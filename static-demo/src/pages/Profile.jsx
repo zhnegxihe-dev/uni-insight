@@ -16,6 +16,7 @@ export default function Profile() {
   const questions = state.questions.filter((q) => q.authorId === user.id && q.status !== "hidden").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
   const replies = state.replies.filter((r) => r.authorId === user.id && r.status !== "hidden").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
   const posts = state.aiPosts.filter((p) => p.authorId === user.id).slice(0, 10);
+  const experiencePosts = state.experiencePosts.filter((p) => p.authorId === user.id && p.status !== "hidden").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -55,7 +56,7 @@ export default function Profile() {
             {questions.map((q) => (
               <Link key={q.id} to={`/question/${q.id}`} className="card block px-4 py-3 hover:border-zinc-300">
                 <p className="text-sm font-medium text-ink">{q.title}</p>
-                <p className="mt-1 text-xs text-zinc-400">{db.starCountFor(state, "question", q.id)} star · {q.replyCount} 回复 · {db.formatRelative(q.createdAt)}</p>
+                <p className="mt-1 text-xs text-zinc-400">{db.starCountFor(state, "question", q.id)} 点赞 · {db.favoriteCountFor(state, "question", q.id)} 收藏 · {q.replyCount} 回复 · {db.formatRelative(q.createdAt)}</p>
               </Link>
             ))}
           </div>
@@ -71,7 +72,7 @@ export default function Profile() {
               return (
                 <Link key={r.id} to={`/question/${r.questionId}`} className="card block px-4 py-3 hover:border-zinc-300">
                   <p className="text-sm leading-relaxed text-ink">{r.content}</p>
-                  <p className="mt-1 text-xs text-zinc-400">回复「{q?.title ?? ""}」 · {r.starCount} star · {db.formatRelative(r.createdAt)}</p>
+                  <p className="mt-1 text-xs text-zinc-400">回复「{q?.title ?? ""}」 · {db.starCountFor(state, "reply", r.id)} 点赞 · {db.favoriteCountFor(state, "reply", r.id)} 收藏 · {db.formatRelative(r.createdAt)}</p>
                 </Link>
               );
             })}
@@ -86,8 +87,28 @@ export default function Profile() {
             {posts.map((p) => (
               <div key={p.id} className="card px-4 py-3">
                 <p className="text-sm font-medium text-ink">{p.title}</p>
-                <p className="mt-1 text-xs text-zinc-400">{p.starCount} star · {db.formatRelative(p.createdAt)}</p>
+                <p className="mt-1 text-xs text-zinc-400">{p.starCount} 点赞 · {p.favoriteCount ?? 0} 收藏 · {db.formatRelative(p.createdAt)}</p>
               </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-base font-semibold text-ink">我的经验帖 / 避雷帖</h2>
+        {experiencePosts.length === 0 ? (
+          <p className="text-sm text-zinc-400">
+            还没有经验帖，<Link to="/posts/new" className="text-accent hover:underline">去写一篇</Link>
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {experiencePosts.map((post) => (
+              <Link key={post.id} to={`/posts/${post.id}`} className="card block px-4 py-3 hover:border-zinc-300">
+                <p className="text-sm font-medium text-ink">{post.title}</p>
+                <p className="mt-1 text-xs text-zinc-400">
+                  {post.postType === "avoid" ? "避雷帖" : "经验帖"} · {db.starCountFor(state, "experience_post", post.id)} 点赞 · {db.favoriteCountFor(state, "experience_post", post.id)} 收藏 · {db.formatRelative(post.createdAt)}
+                </p>
+              </Link>
             ))}
           </div>
         )}

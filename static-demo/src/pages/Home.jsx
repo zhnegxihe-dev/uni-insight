@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useDb } from "../store";
 import * as db from "../db";
-import { QuestionCard, ScenarioTabs } from "../components";
+import { Link } from "react-router-dom";
+import { BookOpen } from "lucide-react";
+import { QuestionCard, ScenarioTabs, ExperiencePostCard } from "../components";
 
 export default function Home() {
   const state = useDb();
@@ -11,13 +13,31 @@ export default function Home() {
   const q = params.get("q") ?? "";
 
   const questions = db.getQuestions(state, { scenario, q });
+  const experiencePosts = db.getExperiencePosts(state, {}).slice(0, 3);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-ink">发现</h1>
-        <p className="mt-1 text-sm text-zinc-500">真实学长学姐的经验，点亮 star 让好内容被看见</p>
+        <p className="mt-1 text-sm text-zinc-500">真实学长学姐的经验，点赞让好内容被看见，收藏留住有用信息</p>
       </div>
+
+      {experiencePosts.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-accent" />
+              <h2 className="text-base font-semibold text-ink">最新经验帖</h2>
+            </div>
+            <Link to="/posts" className="text-sm text-accent hover:underline">查看全部 →</Link>
+          </div>
+          <div className="space-y-3">
+            {experiencePosts.map((post) => (
+              <ExperiencePostCard key={post.id} post={post} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <ScenarioTabs

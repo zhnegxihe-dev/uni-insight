@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { CheckCircle2, ChevronLeft, Eye, Flag } from "lucide-react";
 import { useDb, act } from "../store";
 import * as db from "../db";
-import { StarButton, VerifiedBadge } from "../components";
+import { LikeButton, FavoriteButton, VerifiedBadge } from "../components";
 
 function ReplyItem({ reply, question, canAccept }) {
   const state = useDb();
@@ -46,7 +46,10 @@ function ReplyItem({ reply, question, canAccept }) {
               采纳
             </button>
           )}
-          <StarButton targetType="reply" targetId={reply.id} label="这条回复有帮助" />
+          <div className="flex items-center gap-1.5">
+            <LikeButton targetType="reply" targetId={reply.id} label="这条回复有帮助" />
+            <FavoriteButton targetType="reply" targetId={reply.id} label="收藏这条回复" />
+          </div>
         </div>
       </div>
     </article>
@@ -133,7 +136,10 @@ export default function Question() {
           <span className="ml-auto">{question.replyCount} 条回复</span>
         </div>
         <div className="mt-3 border-t border-line pt-3">
-          <StarButton targetType="question" targetId={question.id} label="问题有帮助，点亮 star" />
+          <div className="flex items-center gap-2">
+            <LikeButton targetType="question" targetId={question.id} label="问题有帮助，点赞" />
+            <FavoriteButton targetType="question" targetId={question.id} label="收藏这个问题" />
+          </div>
         </div>
       </section>
 

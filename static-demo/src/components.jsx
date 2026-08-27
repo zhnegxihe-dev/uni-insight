@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BadgeCheck, MessageSquare, ShieldAlert, Sparkles, Star } from "lucide-react";
+import { BadgeCheck, Bookmark, Heart, MessageSquare, ShieldAlert, Sparkles, Star } from "lucide-react";
 import { useDb, act } from "./store";
 import * as db from "./db";
 
@@ -47,9 +47,13 @@ export function QuestionCard({ question, folded }) {
         ))}
       </div>
       <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
-        <span className="inline-flex items-center gap-1">
-          <Star className={`h-3.5 w-3.5 ${question.starCount > 0 ? "fill-amber-400 text-amber-400" : "text-zinc-400"}`} />
+        <span className="inline-flex items-center gap-1" title="点赞数">
+          <Heart className={`h-3.5 w-3.5 ${db.starCountFor(state, "question", question.id) > 0 ? "fill-rose-400 text-rose-400" : "text-zinc-400"}`} />
           {db.starCountFor(state, "question", question.id)}
+        </span>
+        <span className="inline-flex items-center gap-1" title="收藏数">
+          <Bookmark className={`h-3.5 w-3.5 ${db.favoriteCountFor(state, "question", question.id) > 0 ? "fill-blue-400 text-blue-400" : "text-zinc-400"}`} />
+          {db.favoriteCountFor(state, "question", question.id)}
         </span>
         <span className="inline-flex items-center gap-1">
           <MessageSquare className="h-3.5 w-3.5 text-zinc-400" />
@@ -65,7 +69,7 @@ export function QuestionCard({ question, folded }) {
   );
 }
 
-export function StarButton({ targetType, targetId, label }) {
+export function LikeButton({ targetType, targetId, label }) {
   const state = useDb();
   const user = db.getCurrentUser(state);
   const active = db.isStarred(state, targetType, targetId);
@@ -74,6 +78,7 @@ export function StarButton({ targetType, targetId, label }) {
     <button
       type="button"
       onClick={() => {
+        if (!user) { alert("请先登录"); return; }
         try {
           act(db.toggleStar, targetType, targetId);
         } catch (e) {
@@ -81,12 +86,40 @@ export function StarButton({ targetType, targetId, label }) {
         }
       }}
       className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-all active:scale-90 ${
-        active ? "bg-amber-50 text-amber-600" : "text-zinc-500 hover:bg-zinc-50 hover:text-ink"
+        active ? "bg-rose-50 text-rose-600" : "text-zinc-500 hover:bg-zinc-50 hover:text-ink"
       }`}
-      title={label ?? "点亮 star"}
+      title={label ?? "点赞"}
       aria-pressed={active}
     >
-      <Star className={`h-4 w-4 transition-all ${active ? "scale-110 fill-amber-400 text-amber-400" : "text-zinc-400"}`} />
+      <Heart className={`h-4 w-4 transition-all ${active ? "scale-110 fill-rose-500 text-rose-500" : "text-zinc-400"}`} />
+      {count}
+    </button>
+  );
+}
+
+export function FavoriteButton({ targetType, targetId, label }) {
+  const state = useDb();
+  const user = db.getCurrentUser(state);
+  const active = db.isFavorited(state, targetType, targetId);
+  const count = db.favoriteCountFor(state, targetType, targetId);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (!user) { alert("请先登录"); return; }
+        try {
+          act(db.toggleFavorite, targetType, targetId);
+        } catch (e) {
+          alert(e.message);
+        }
+      }}
+      className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-all active:scale-90 ${
+        active ? "bg-blue-50 text-blue-600" : "text-zinc-500 hover:bg-zinc-50 hover:text-ink"
+      }`}
+      title={label ?? "收藏"}
+      aria-pressed={active}
+    >
+      <Bookmark className={`h-4 w-4 transition-all ${active ? "scale-110 fill-blue-500 text-blue-500" : "text-zinc-400"}`} />
       {count}
     </button>
   );
@@ -263,5 +296,170 @@ export function ReviewForm({ schoolId, schoolName, target, courseId, teacherId, 
       {ok && <p className="text-sm font-medium text-emerald-600">评价已发布</p>}
       <button type="submit" className="btn-primary">发布结构化评价</button>
     </form>
+  );
+}
+
+/* ---------- 经验帖卡片 ---------- */
+export function ExperiencePostCard({ post }) {
+  const state = useDb();
+  const author = state.users.find((u) => u.id === post.authorId);
+  const schools = JSON.parse(author?.verifiedSchools || "[]");
+  const typeMeta = db.POST_TYPES.find((p) => p.key === post.postType);
+  const isAvoid = post.postType === "avoid";
+  let images = [];
+  try { images = JSON.parse(post.images || "[]"); } catch { images = []; }
+  const cover = images[0];
+  const likeCount = db.starCountFor(state, "experience_post", post.id);
+  const favCount = db.favoriteCountFor(state, "experience_post", post.id);
+  return (
+    <div className="card block p-5 transition-all duration-150 hover:border-zinc-300 hover:shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${isAvoid ? "bg-red-50 text-red-600" : "bg-blue-50 text-accent"}`}>
+              {typeMeta?.label ?? post.postType}
+            </span>
+            {post.status === "folded" && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
+                <ShieldAlert className="h-3.5 w-3.5" />已折叠
+              </span>
+            )}
+          </div>
+          <Link to={`/posts/${post.id}`} className="text-[15px] font-semibold leading-snug text-ink hover:text-accent">
+            {post.title}
+          </Link>
+          <p className="mt-1.5 line-clamp-2 text-sm text-zinc-500">{post.content}</p>
+        </div>
+        {cover && (
+          <div className="hidden h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-line sm:block">
+            <img src={cover} alt="配图" className="h-full w-full object-cover" />
+          </div>
+        )}
+      </div>
+      <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
+        <span className="inline-flex items-center gap-1" title="点赞数">
+          <Heart className={`h-3.5 w-3.5 ${likeCount > 0 ? "fill-rose-400 text-rose-400" : "text-zinc-400"}`} />
+          {likeCount}
+        </span>
+        <span className="inline-flex items-center gap-1" title="收藏数">
+          <Bookmark className={`h-3.5 w-3.5 ${favCount > 0 ? "fill-blue-400 text-blue-400" : "text-zinc-400"}`} />
+          {favCount}
+        </span>
+        <span className="ml-auto inline-flex items-center gap-1.5">
+          <Link to={`/user/${author?.id}`} className="font-medium text-zinc-600 hover:text-accent">{author?.nickname}</Link>
+          <VerifiedBadge schools={schools} />
+        </span>
+        <span>{db.formatRelative(post.createdAt)}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- 配图上传（浏览器端压缩 data URL） ---------- */
+const MAX_DIMENSION = 1280;
+const QUALITY = 0.82;
+
+function fileToCompressedDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, MAX_DIMENSION / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("无法处理图片")); return; }
+        ctx.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", QUALITY));
+      };
+      image.onerror = () => reject(new Error("图片解析失败，请换一张"));
+      image.src = dataUrl;
+    };
+    reader.onerror = () => reject(new Error("读取文件失败"));
+    reader.readAsDataURL(file);
+  });
+}
+
+export function ImageUploader({ images, onChange, max = 6 }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleFiles(files) {
+    if (!files || files.length === 0) return;
+    setBusy(true);
+    setError("");
+    try {
+      const remaining = max - images.length;
+      const list = Array.from(files).filter((f) => f.type.startsWith("image/")).slice(0, remaining);
+      const next = [];
+      for (const file of list) {
+        const compressed = await fileToCompressedDataUrl(file);
+        next.push(compressed);
+      }
+      onChange([...images, ...next].slice(0, max));
+    } catch (e) {
+      setError(e.message || "图片处理失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {images.map((src, index) => (
+          <div key={index} className="relative h-20 w-20 overflow-hidden rounded-lg border border-line">
+            <img src={src} alt={`配图 ${index + 1}`} className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => onChange(images.filter((_, i) => i !== index))}
+              className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+              title="移除图片"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        {images.length < max && (
+          <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-zinc-300 text-zinc-400 transition hover:border-accent hover:text-accent">
+            <span className="text-lg leading-none">＋</span>
+            <span className="text-[11px]">{busy ? "处理中" : "配图"}</span>
+            <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
+          </label>
+        )}
+      </div>
+      <p className="text-xs text-zinc-400">最多 {max} 张，自动压缩（最长边 1280px）。敏感信息请打码。</p>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+/* ---------- 配图展示（网格 + 灯箱） ---------- */
+export function ImageGallery({ images, className }) {
+  const [active, setActive] = useState(null);
+  if (!images || images.length === 0) return null;
+  return (
+    <>
+      <div className={className ?? "mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3"}>
+        {images.map((src, index) => (
+          <button key={index} type="button" onClick={() => setActive(index)} className="group relative overflow-hidden rounded-lg border border-line">
+            <img src={src} alt={`配图 ${index + 1}`} className="aspect-[4/3] w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" loading="lazy" />
+          </button>
+        ))}
+      </div>
+      {active !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4" onClick={() => setActive(null)}>
+          <button type="button" className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white" onClick={() => setActive(null)} aria-label="关闭">
+            ✕
+          </button>
+          <img src={images[active]} alt={`配图 ${active + 1}`} className="max-h-[85vh] max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+    </>
   );
 }

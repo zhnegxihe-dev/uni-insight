@@ -8,9 +8,9 @@ export default function Levels() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <h1 className="text-xl font-semibold text-ink">Star 等级与奖励</h1>
+      <h1 className="text-xl font-semibold text-ink">积分等级</h1>
       <p className="text-sm text-zinc-500">
-        点亮别人的内容积累 star_score，等级越高解锁越多能力。{user ? `你当前 L${user.level} · ${user.starScore} 分` : "登录后查看你的等级"}
+        点赞让真实经验获得认可，收藏留住有用信息，star_score 由点赞/采纳/认证等累计。{user ? `你当前 L${user.level} · ${user.starScore} 分` : "登录后查看你的等级"}
       </p>
 
       <section className="card p-5">
@@ -33,12 +33,14 @@ export default function Levels() {
           <Star className="h-4 w-4 text-amber-400" />计分规则
         </h2>
         <ul className="space-y-1.5 text-sm text-zinc-600">
-          <li>· 我发布的提问被 star：+1</li>
-          <li>· 我发布的回复被 star：+2</li>
+          <li>· 我发布的提问被点赞：+1</li>
+          <li>· 我发布的回复被点赞：+2</li>
+          <li>· 我发布的经验帖/避雷帖被点赞：+3</li>
           <li>· 回复被采纳：+10</li>
-          <li>· AI 精选帖被 star：+5</li>
+          <li>· AI 精选帖被点赞：+5</li>
           <li>· 有效举报：+5（每日上限 5）</li>
           <li>· 学校邮箱认证：+20（一次性）</li>
+          <li>· 收藏不计分，但会提高内容在推荐中的权重</li>
         </ul>
       </section>
     </div>

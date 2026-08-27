@@ -12,6 +12,11 @@ export const SCENARIOS = [
   { type: "career", label: "就业行业" },
 ];
 
+export const POST_TYPES = [
+  { key: "experience", label: "经验帖", hint: "分享真实就读 / 申请 / 求职经验" },
+  { key: "avoid", label: "避雷帖", hint: "提醒踩过的坑，帮后来人避雷" },
+];
+
 export const SCENARIO_LABEL = {
   gaokao: "高考志愿",
   transfer: "转专业",
@@ -92,7 +97,9 @@ function initState() {
     reviews: seed.reviews.map((r) => ({ ...r })),
     aiSummaries: seed.aiSummaries.map((a) => ({ ...a })),
     aiPosts: seed.aiPosts.map((p) => ({ ...p })),
+    experiencePosts: seed.experiencePosts ? seed.experiencePosts.map((p) => ({ ...p })) : [],
     myStars: [],
+    myFavorites: [],
     follows: [],
     conversations: [],
     notifications: [],
@@ -106,7 +113,18 @@ export function loadState() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.version === 1) return parsed;
+      if (parsed && parsed.version === 1) {
+        // v4.4 迁移：补充经验帖/收藏相关字段（保留用户已有数据）
+        if (!Array.isArray(parsed.experiencePosts)) {
+          parsed.experiencePosts = seed.experiencePosts ? seed.experiencePosts.map((p) => ({ ...p })) : [];
+        }
+        if (!Array.isArray(parsed.myFavorites)) parsed.myFavorites = [];
+        for (const q of parsed.questions) if (typeof q.favoriteCount !== "number") q.favoriteCount = 0;
+        for (const r of parsed.replies) if (typeof r.favoriteCount !== "number") r.favoriteCount = 0;
+        for (const p of parsed.aiPosts) if (typeof p.favoriteCount !== "number") p.favoriteCount = 0;
+        saveState(parsed);
+        return parsed;
+      }
     }
   } catch {
     /* ignore */
@@ -165,6 +183,11 @@ export function logout(state) {
 export function hotScore(q) {
   const ageHours = Math.max(0.1, (Date.now() - new Date(q.createdAt).getTime()) / 3600000);
   return (q.starCount * 3 + q.replyCount * 2) / Math.pow(ageHours + 2, 1.5);
+}
+
+export function hotScorePost(post) {
+  const ageHours = Math.max(0.1, (Date.now() - new Date(post.createdAt).getTime()) / 3600000);
+  return (post.likeCount * 3 + post.favoriteCount * 4) / Math.pow(ageHours + 2, 1.5);
 }
 
 export function getQuestions(state, { scenario = "all", q = "" } = {}) {
@@ -248,6 +271,62 @@ export function createReply(state, questionId, content) {
   saveState(state);
   return reply;
 }
+/* ---------- 经验帖 / 避雷帖 ---------- */
+export function getExperiencePosts(state, { type = "", scenario = "", q = "" } = {}) {
+  let list = state.experiencePosts.filter((x) => x.status !== "hidden");
+  if (type === "experience" || type === "avoid") list = list.filter((x) => x.postType === type);
+  if (scenario) list = list.filter((x) => x.scenarioType === scenario);
+  if (q) {
+    const kw = q.toLowerCase();
+    list = list.filter((x) => x.title.toLowerCase().includes(kw) || x.content.toLowerCase().includes(kw));
+  }
+  return [...list].sort((a, b) => hotScorePost(b) - hotScorePost(a));
+}
+
+export function getExperiencePost(state, id) {
+  const post = state.experiencePosts.find((x) => x.id === id);
+  if (!post) return null;
+  const author = state.users.find((u) => u.id === post.authorId);
+  return {
+    ...post,
+    author,
+    school: state.schools.find((s) => s.id === post.schoolId) ?? null,
+    major: state.majors.find((m) => m.id === post.majorId) ?? null,
+    course: state.courses.find((c) => c.id === post.courseId) ?? null,
+    teacher: state.teachers.find((t) => t.id === post.teacherId) ?? null,
+  };
+}
+
+export function createExperiencePost(state, { title, content, postType, scenarioType, schoolId, majorId, courseId, teacherId, images }) {
+  const user = getCurrentUser(state);
+  if (!user) throw new Error("请先登录");
+  if (!title) throw new Error("请填写标题");
+  if (!content) throw new Error("请填写正文");
+  if (!["experience", "avoid"].includes(postType)) throw new Error("帖子类型不正确");
+  if (/微信|qq|vx|手机号|电话|保录取|代写|收款|扫码|加我|联系我|http|转账/i.test(title + content)) {
+    throw new Error("内容疑似广告/中介，请移除联系方式或营销信息");
+  }
+  const post = {
+    id: uid("p"),
+    authorId: user.id,
+    title,
+    content,
+    postType,
+    scenarioType: scenarioType || null,
+    schoolId: schoolId || null,
+    majorId: majorId || null,
+    courseId: courseId || null,
+    teacherId: teacherId || null,
+    images: JSON.stringify(images || []),
+    likeCount: 0,
+    favoriteCount: 0,
+    status: "visible",
+    createdAt: new Date().toISOString(),
+  };
+  state.experiencePosts.push(post);
+  saveState(state);
+  return post;
+}
 
 /* ---------- star ---------- */
 export function toggleStar(state, targetType, targetId) {
@@ -275,9 +354,41 @@ export function starCountFor(state, targetType, targetId) {
   const base = (() => {
     if (targetType === "question") return state.questions.find((x) => x.id === targetId)?.starCount ?? 0;
     if (targetType === "reply") return state.replies.find((x) => x.id === targetId)?.starCount ?? 0;
+    if (targetType === "experience_post") return state.experiencePosts.find((x) => x.id === targetId)?.likeCount ?? 0;
     return state.aiPosts.find((x) => x.id === targetId)?.starCount ?? 0;
   })();
   return base + (isStarred(state, targetType, targetId) ? 1 : 0);
+}
+
+export function toggleFavorite(state, targetType, targetId) {
+  const user = getCurrentUser(state);
+  if (!user) throw new Error("请先登录");
+  const idx = state.myFavorites.findIndex((s) => s.userId === user.id && s.targetType === targetType && s.targetId === targetId);
+  let active = false;
+  if (idx >= 0) {
+    state.myFavorites.splice(idx, 1);
+  } else {
+    state.myFavorites.push({ userId: user.id, targetType, targetId });
+    active = true;
+  }
+  saveState(state);
+  return active;
+}
+
+export function isFavorited(state, targetType, targetId) {
+  const user = getCurrentUser(state);
+  if (!user) return false;
+  return state.myFavorites.some((s) => s.userId === user.id && s.targetType === targetType && s.targetId === targetId);
+}
+
+export function favoriteCountFor(state, targetType, targetId) {
+  const base = (() => {
+    if (targetType === "question") return state.questions.find((x) => x.id === targetId)?.favoriteCount ?? 0;
+    if (targetType === "reply") return state.replies.find((x) => x.id === targetId)?.favoriteCount ?? 0;
+    if (targetType === "experience_post") return state.experiencePosts.find((x) => x.id === targetId)?.favoriteCount ?? 0;
+    return state.aiPosts.find((x) => x.id === targetId)?.favoriteCount ?? 0;
+  })();
+  return base + (isFavorited(state, targetType, targetId) ? 1 : 0);
 }
 
 /* ---------- 关注 ---------- */
@@ -506,13 +617,14 @@ export function createReview(state, input) {
 /* ---------- 搜索 ---------- */
 export function search(state, q) {
   const kw = (q || "").trim().toLowerCase();
-  if (!kw) return { questions: [], schools: [], majors: [], courses: [], teachers: [] };
+  if (!kw) return { questions: [], schools: [], majors: [], courses: [], teachers: [], experiencePosts: [] };
   return {
     questions: state.questions.filter((x) => x.status !== "hidden" && (x.title.toLowerCase().includes(kw) || (x.description || "").toLowerCase().includes(kw))).slice(0, 10),
     schools: state.schools.filter((s) => s.name.toLowerCase().includes(kw)).slice(0, 5),
     majors: state.majors.filter((m) => m.name.toLowerCase().includes(kw)).slice(0, 5),
     courses: state.courses.filter((c) => c.name.toLowerCase().includes(kw)).slice(0, 6),
     teachers: state.teachers.filter((t) => t.name.toLowerCase().includes(kw) || (t.department || "").toLowerCase().includes(kw)).slice(0, 6),
+    experiencePosts: state.experiencePosts.filter((x) => x.status !== "hidden" && (x.title.toLowerCase().includes(kw) || x.content.toLowerCase().includes(kw))).slice(0, 6),
   };
 }
 
