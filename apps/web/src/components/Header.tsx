@@ -31,6 +31,9 @@ export async function Header() {
           <Link href="/posts" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
             经验帖
           </Link>
+          <Link href="/schools" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
+            院校
+          </Link>
           <Link href="/levels" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
             积分等级
           </Link>

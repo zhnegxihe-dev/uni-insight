@@ -3,8 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { useDb } from "../store";
 import * as db from "../db";
 import { Link } from "react-router-dom";
-import { BookOpen } from "lucide-react";
-import { QuestionCard, ScenarioTabs, ExperiencePostCard } from "../components";
+import { BookOpen, Building2 } from "lucide-react";
+import { QuestionCard, ScenarioTabs, ExperiencePostCard, SchoolCard } from "../components";
 
 export default function Home() {
   const state = useDb();
@@ -14,6 +14,7 @@ export default function Home() {
 
   const questions = db.getQuestions(state, { scenario, q });
   const experiencePosts = db.getExperiencePosts(state, {}).slice(0, 3);
+  const hotSchools = db.schoolStats(state).sort((a, b) => b.reviewCount - a.reviewCount || b.questionCount - a.questionCount).slice(0, 6);
 
   return (
     <div className="space-y-6">
@@ -21,6 +22,23 @@ export default function Home() {
         <h1 className="text-xl font-semibold text-ink">发现</h1>
         <p className="mt-1 text-sm text-zinc-500">真实学长学姐的经验，点赞让好内容被看见，收藏留住有用信息</p>
       </div>
+
+      {hotSchools.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-accent" />
+              <h2 className="text-base font-semibold text-ink">热门院校</h2>
+            </div>
+            <Link to="/schools" className="text-sm text-accent hover:underline">全部院校 →</Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {hotSchools.map((school) => (
+              <SchoolCard key={school.id} school={school} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {experiencePosts.length > 0 && (
         <section>

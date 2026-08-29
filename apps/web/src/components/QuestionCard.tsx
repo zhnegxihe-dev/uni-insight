@@ -15,7 +15,7 @@ interface QuestionCardProps {
   createdAt: Date;
   hasSummary: boolean;
   folded?: boolean;
-  tags: { id: string; name: string; slug?: string }[];
+  tags: { id: string; name: string; slug?: string; type?: string }[];
   author: { nickname: string; verifiedSchools: string; level: number };
 }
 
@@ -65,11 +65,19 @@ export function QuestionCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        {tags.slice(0, 4).map((tag) =>
-          tag.slug ? (
+        {tags.slice(0, 4).map((tag) => {
+          const href =
+            tag.type === "school"
+              ? `/school/${tag.slug}`
+              : tag.type === "major"
+                ? `/major/${tag.slug}`
+                : tag.slug
+                  ? `/tag/${tag.slug}`
+                  : null;
+          return href ? (
             <Link
               key={tag.id}
-              href={`/tag/${tag.slug}`}
+              href={href}
               className="rounded-md bg-zinc-50 px-2 py-0.5 text-xs text-zinc-600 transition hover:bg-blue-50 hover:text-accent"
             >
               {tag.name}
@@ -78,8 +86,8 @@ export function QuestionCard({
             <span key={tag.id} className="rounded-md bg-zinc-50 px-2 py-0.5 text-xs text-zinc-600">
               {tag.name}
             </span>
-          )
-        )}
+          );
+        })}
       </div>
 
       <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">

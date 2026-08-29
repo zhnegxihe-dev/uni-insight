@@ -1,12 +1,14 @@
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
-import { BookOpen, Sparkles } from "lucide-react";
+import { BookOpen, Building2, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { getRecommendations, hotScore, hotScorePost } from "@/lib/recommend";
+import { getSchoolsWithStats } from "@/lib/schools";
 import { ScenarioTabs } from "@/components/ScenarioTabs";
 import { QuestionCard } from "@/components/QuestionCard";
 import { ExperiencePostCard } from "@/components/ExperiencePostCard";
+import { SchoolCard } from "@/components/SchoolCard";
 
 export const dynamic = "force-dynamic";
 
@@ -26,12 +28,12 @@ export default async function Home({
   }
 
   const user = await getSessionUser();
-  const [questions, recResult, experiencePosts] = await Promise.all([
+  const [questions, recResult, experiencePosts, schoolRows] = await Promise.all([
     prisma.question.findMany({
       where,
       include: {
         author: { select: { nickname: true, verifiedSchools: true, level: true } },
-        tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
+        tags: { include: { tag: { select: { id: true, name: true, slug: true, type: true } } } },
         aiSummary: { select: { id: true, confidence: true } },
       },
       take: 60,
@@ -48,11 +50,13 @@ export default async function Home({
       },
       take: 20,
     }),
+    getSchoolsWithStats(200),
   ]);
 
   // 各栏目内按热门推荐算法排序（点赞/回复加权 + 时间衰减），热门内容优先
   const sortedQuestions = [...questions].sort((a, b) => hotScore(b) - hotScore(a));
   const sortedPosts = [...experiencePosts].sort((a, b) => hotScorePost(b) - hotScorePost(a)).slice(0, 3);
+  const hotSchools = [...schoolRows].sort((a, b) => b.reviewCount - a.reviewCount || b.questionCount - a.questionCount).slice(0, 6);
 
   const renderCard = (question: (typeof questions)[number], keyPrefix: string) => (
     <QuestionCard
@@ -67,7 +71,7 @@ export default async function Home({
       createdAt={question.createdAt}
       hasSummary={Boolean(question.aiSummary)}
       folded={question.status === "folded"}
-      tags={question.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, slug: t.tag.slug }))}
+      tags={question.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, slug: t.tag.slug, type: t.tag.type }))}
       author={question.author}
     />
   );
@@ -90,6 +94,25 @@ export default async function Home({
           </div>
           <div className="space-y-3">
             {recResult.items.map(({ question }) => renderCard(question, "rec"))}
+          </div>
+        </section>
+      )}
+
+      {hotSchools.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-accent" />
+              <h2 className="text-base font-semibold text-ink">热门院校</h2>
+            </div>
+            <Link href="/schools" className="text-sm text-accent hover:underline">
+              全部院校 →
+            </Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {hotSchools.map((school) => (
+              <SchoolCard key={school.id} school={school} />
+            ))}
           </div>
         </section>
       )}

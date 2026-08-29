@@ -29,7 +29,7 @@ export default async function TagPage({ params }: { params: Promise<{ slug: stri
           question: {
             include: {
               author: { select: { nickname: true, verifiedSchools: true, level: true } },
-              tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
+              tags: { include: { tag: { select: { id: true, name: true, slug: true, type: true } } } },
               aiSummary: { select: { id: true, confidence: true } },
             },
           },
@@ -91,7 +91,7 @@ export default async function TagPage({ params }: { params: Promise<{ slug: stri
                 createdAt={question.createdAt}
                 hasSummary={Boolean(question.aiSummary)}
                 folded={question.status === "folded"}
-                tags={question.tags.map((item) => ({ id: item.tag.id, name: item.tag.name, slug: item.tag.slug }))}
+                tags={question.tags.map((item) => ({ id: item.tag.id, name: item.tag.name, slug: item.tag.slug, type: item.tag.type }))}
                 author={question.author}
               />
             ))}

@@ -29,7 +29,7 @@ export default async function FollowingPage() {
         where: { authorId: { in: followingIds }, status: { not: "hidden" } },
         include: {
           author: { select: { nickname: true, verifiedSchools: true, level: true } },
-          tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
+          tags: { include: { tag: { select: { id: true, name: true, slug: true, type: true } } } },
           aiSummary: { select: { id: true, confidence: true } },
         },
         orderBy: { createdAt: "desc" },
@@ -131,7 +131,7 @@ export default async function FollowingPage() {
                     createdAt={question.createdAt}
                     hasSummary={Boolean(question.aiSummary)}
                     folded={question.status === "folded"}
-                    tags={question.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, slug: t.tag.slug }))}
+                    tags={question.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, slug: t.tag.slug, type: t.tag.type }))}
                     author={question.author}
                   />
                 ))}

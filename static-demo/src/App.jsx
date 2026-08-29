@@ -21,6 +21,7 @@ import Levels from "./pages/Levels";
 import Posts from "./pages/Posts";
 import PostNew from "./pages/PostNew";
 import PostDetail from "./pages/PostDetail";
+import Schools from "./pages/Schools";
 
 function Header() {
   const state = useDb();
@@ -44,6 +45,7 @@ function Header() {
         <nav className="hidden shrink-0 items-center gap-0.5 text-sm text-zinc-600 lg:flex">
           <Link to="/" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">发现</Link>
           <Link to="/posts" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">经验帖</Link>
+          <Link to="/schools" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">院校</Link>
           <Link to="/levels" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">积分等级</Link>
           <Link to="/compare" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">学校对比</Link>
         </nav>
@@ -147,6 +149,7 @@ export default function App() {
           <Route path="/messages/:id" element={<Conversation />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/levels" element={<Levels />} />
+          <Route path="/schools" element={<Schools />} />
           <Route path="/posts" element={<Posts />} />
           <Route path="/posts/new" element={<PostNew />} />
           <Route path="/posts/:id" element={<PostDetail />} />

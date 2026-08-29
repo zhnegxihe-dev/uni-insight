@@ -547,6 +547,23 @@ export function markAllNotificationsRead(state) {
 }
 
 /* ---------- 档案 / 评价 ---------- */
+export function schoolStats(state) {
+  return state.schools.map((school) => {
+    const reviewCount = state.reviews.filter((r) => r.schoolId === school.id && r.status !== "hidden").length;
+    const majorCount = new Set(
+      state.courses.filter((c) => c.schoolId === school.id).map((c) => c.majorId).filter(Boolean)
+    ).size;
+    const teacherCount = state.teachers.filter((t) => t.schoolId === school.id).length;
+    const schoolTag = state.tags.find((t) => t.name === school.name && t.type === "school");
+    const questionCount = schoolTag
+      ? state.questions.filter(
+          (q) => q.status !== "hidden" && state.questionTags.some((qt) => qt.questionId === q.id && qt.tagId === schoolTag.id)
+        ).length
+      : 0;
+    return { ...school, reviewCount, majorCount, teacherCount, questionCount };
+  });
+}
+
 export function getSchool(state, slug) {
   const school = state.schools.find((s) => s.slug === slug);
   if (!school) return null;

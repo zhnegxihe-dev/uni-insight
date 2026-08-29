@@ -40,11 +40,19 @@ export function QuestionCard({ question, folded }) {
       </Link>
       {question.description && <p className="mt-1.5 line-clamp-2 text-sm text-zinc-500">{question.description}</p>}
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        {tags.map((tag) => (
-          <Link key={tag.id} to={`/search?q=${encodeURIComponent(tag.name)}`} className="rounded-md bg-zinc-50 px-2 py-0.5 text-xs text-zinc-600 transition hover:bg-blue-50 hover:text-accent">
-            {tag.name}
-          </Link>
-        ))}
+        {tags.map((tag) => {
+          const href =
+            tag.type === "school"
+              ? `/school/${tag.slug}`
+              : tag.type === "major"
+                ? `/major/${tag.slug}`
+                : `/search?q=${encodeURIComponent(tag.name)}`;
+          return (
+            <Link key={tag.id} to={href} className="rounded-md bg-zinc-50 px-2 py-0.5 text-xs text-zinc-600 transition hover:bg-blue-50 hover:text-accent">
+              {tag.name}
+            </Link>
+          );
+        })}
       </div>
       <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
         <span className="inline-flex items-center gap-1" title="点赞数">
@@ -461,5 +469,30 @@ export function ImageGallery({ images, className }) {
         </div>
       )}
     </>
+  );
+}
+
+/* ---------- 学校卡片 ---------- */
+export function SchoolCard({ school }) {
+  return (
+    <Link to={`/school/${school.slug}`} className="card block p-5 transition-all duration-150 hover:border-zinc-300 hover:shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+            <span className="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-accent">
+              {school.region || "地区未知"} · {school.type || "高校"}
+            </span>
+            {school.verified && <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-600">已认证档案</span>}
+          </div>
+          <p className="text-[15px] font-semibold text-ink transition-colors hover:text-accent">{school.name}</p>
+        </div>
+        <span className="shrink-0 text-2xl font-semibold text-accent">{school.reviewCount}</span>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-zinc-500">
+        <span>{school.reviewCount} 条认证评价</span>
+        <span>{school.majorCount} 个专业</span>
+        <span>{school.questionCount} 条提问</span>
+      </div>
+    </Link>
   );
 }
