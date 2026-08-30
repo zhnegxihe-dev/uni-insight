@@ -101,7 +101,7 @@ export default function PostNew() {
           <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
             <p className="text-sm font-medium text-blue-800">你正在发布商家推广帖</p>
             <ul className="list-disc space-y-1 pl-5 text-xs text-blue-700">
-              <li>帖子将进入独立的「推广池」，获得商家付费推广位与专属曝光；</li>
+              <li>帖子将列为「推广帖」（带商家推广角标，可在推广帖 tab 查看），获得商家付费推广位与专属曝光；</li>
               <li>可领取商家报酬/佣金（平台担保）；</li>
               <li>诚信分 +5，获得「透明分享者」徽章，你以后的真心经验帖会因诚信分被加权；</li>
               <li>若你并未受商家委托，请勿勾选——虚假标注将被扣诚信分并降权。</li>

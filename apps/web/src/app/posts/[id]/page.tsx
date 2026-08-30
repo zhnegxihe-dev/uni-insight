@@ -87,7 +87,7 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
           </div>
           {isPromo && (
             <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
-              受商家委托的推广内容，已在独立「推广池」明示标注，不进入经验帖/推荐流。内容仍接受点赞、收藏与评论区监督。
+              受商家委托的推广内容，已明示标注为「推广帖」并带商户名角标，不进入信任流推荐。内容仍接受点赞、收藏与评论区监督。
             </div>
           )}
           <h1 className="text-lg font-semibold leading-snug text-ink">{post.title}</h1>
