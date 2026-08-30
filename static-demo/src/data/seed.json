@@ -8,7 +8,8 @@
       "verifiedSchools": "[\"中山大学\"]",
       "level": 2,
       "starScore": 122,
-      "createdAt": "2026-08-25T14:16:19.113Z"
+      "createdAt": "2026-08-25T14:16:19.113Z",
+      "trustScore": 25
     },
     {
       "id": "cmt8r03si0009n9qk48vtf0l9",
@@ -1420,6 +1421,24 @@
     }
   ],
   "experiencePosts": [
+    {
+      "id": "p_mtfssa6dktame9",
+      "authorId": "cmt8r03si0009n9qk48vtf0l9",
+      "title": "南门巷子口的沙县小吃，晚自习后的快乐老家",
+      "content": "学校南门巷子口那家沙县小吃，拌面和蒸饺都挺稳，老板给的量很实在，晚自习下课来一份刚刚好。老板人很热情，说学生党来吃还给打折。\n\n（本条为商家委托推广，已明示标注；好不好吃评论区说了算）",
+      "postType": "promo",
+      "scenarioType": null,
+      "schoolId": "cmt8r04nn000an9qk86ycs8iq",
+      "majorId": null,
+      "courseId": null,
+      "teacherId": null,
+      "merchantName": "南门沙县小吃",
+      "images": "[]",
+      "likeCount": 3,
+      "favoriteCount": 1,
+      "status": "visible",
+      "createdAt": "2026-08-28T10:00:00.000Z"
+    },
     {
       "id": "p_mtbmohzmpcrj0k",
       "authorId": "cmt8r035w0001n9qk5q0epo44",

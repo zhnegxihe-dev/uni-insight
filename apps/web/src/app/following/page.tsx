@@ -39,9 +39,9 @@ export default async function FollowingPage() {
 
   const experiencePosts = followingIds.length
     ? await prisma.experiencePost.findMany({
-        where: { authorId: { in: followingIds }, status: { not: "hidden" } },
+        where: { authorId: { in: followingIds }, status: { not: "hidden" }, postType: { not: "promo" } },
         include: {
-          author: { select: { nickname: true, verifiedSchools: true, level: true } },
+          author: { select: { nickname: true, verifiedSchools: true, level: true, trustScore: true } },
           school: { select: { id: true, name: true, slug: true } },
           major: { select: { id: true, name: true, slug: true } },
         },
@@ -98,6 +98,7 @@ export default async function FollowingPage() {
                     title={post.title}
                     content={post.content}
                     postType={post.postType}
+                    merchantName={post.merchantName}
                     images={JSON.parse(post.images) as string[]}
                     likeCount={post.likeCount}
                     favoriteCount={post.favoriteCount}

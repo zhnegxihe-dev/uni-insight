@@ -74,7 +74,7 @@ export default async function SearchPage({
       : [],
     query
       ? prisma.experiencePost.findMany({
-          where: { status: { not: "hidden" }, OR: [{ title: { contains: query } }, { content: { contains: query } }] },
+          where: { status: { not: "hidden" }, postType: { not: "promo" }, OR: [{ title: { contains: query } }, { content: { contains: query } }] },
           select: {
             id: true,
             title: true,

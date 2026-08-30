@@ -42,9 +42,9 @@ export default async function Home({
       ? getRecommendations(user.id, 6)
       : Promise.resolve({ items: [], hasProfile: false, reason: null, userVector: {} }),
     prisma.experiencePost.findMany({
-      where: { status: { not: "hidden" } },
+      where: { status: { not: "hidden" }, postType: { not: "promo" } },
       include: {
-        author: { select: { nickname: true, verifiedSchools: true, level: true } },
+        author: { select: { nickname: true, verifiedSchools: true, level: true, trustScore: true } },
         school: { select: { id: true, name: true, slug: true } },
         major: { select: { id: true, name: true, slug: true } },
       },
@@ -55,7 +55,9 @@ export default async function Home({
 
   // 各栏目内按热门推荐算法排序（点赞/回复加权 + 时间衰减），热门内容优先
   const sortedQuestions = [...questions].sort((a, b) => hotScore(b) - hotScore(a));
-  const sortedPosts = [...experiencePosts].sort((a, b) => hotScorePost(b) - hotScorePost(a)).slice(0, 3);
+  const sortedPosts = [...experiencePosts]
+    .sort((a, b) => hotScorePost(b) + (b.author?.trustScore ?? 0) * 0.001 - (hotScorePost(a) + (a.author?.trustScore ?? 0) * 0.001))
+    .slice(0, 3);
   const hotSchools = [...schoolRows].sort((a, b) => b.reviewCount - a.reviewCount || b.questionCount - a.questionCount).slice(0, 6);
 
   const renderCard = (question: (typeof questions)[number], keyPrefix: string) => (
@@ -136,6 +138,7 @@ export default async function Home({
                 title={post.title}
                 content={post.content}
                 postType={post.postType}
+                merchantName={post.merchantName}
                 images={JSON.parse(post.images) as string[]}
                 likeCount={post.likeCount}
                 favoriteCount={post.favoriteCount}

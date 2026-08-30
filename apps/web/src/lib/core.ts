@@ -73,6 +73,7 @@ export const SCENARIO_LABEL: Record<ConcreteScenario, string> = {
 export const POST_TYPES = [
   { key: "experience", label: "经验帖", hint: "分享真实就读 / 申请 / 求职经验" },
   { key: "avoid", label: "避雷帖", hint: "提醒踩过的坑，帮后来人避雷" },
+  { key: "promo", label: "推广帖", hint: "受商家委托的推荐，明示标注（独立推广池）" },
 ] as const;
 export type ExperiencePostType = (typeof POST_TYPES)[number]["key"];
 

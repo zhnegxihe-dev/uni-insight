@@ -17,10 +17,13 @@ export default function Posts() {
           <h1 className="text-xl font-semibold text-ink">经验帖 / 避雷帖</h1>
           <p className="mt-1 text-sm text-zinc-500">学长学姐的真实就读 / 申请 / 求职经验，以及踩过的坑</p>
         </div>
-        <Link to="/posts/new" className="btn-primary whitespace-nowrap">
-          <Plus className="h-4 w-4" />
-          写经验帖
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link to="/promo" className="btn-ghost whitespace-nowrap">推广池</Link>
+          <Link to="/posts/new" className="btn-primary whitespace-nowrap">
+            <Plus className="h-4 w-4" />
+            写经验帖
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -31,7 +34,7 @@ export default function Posts() {
         >
           全部
         </button>
-        {db.POST_TYPES.map((item) => (
+        {db.POST_TYPES.filter((item) => item.key !== "promo").map((item) => (
           <button
             key={item.key}
             type="button"

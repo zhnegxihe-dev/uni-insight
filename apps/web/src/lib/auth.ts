@@ -15,6 +15,7 @@ export interface SessionUser {
   starScore: number;
   role: string;
   verifiedSchools: string[];
+  trustScore: number;
 }
 
 export async function createSession(userId: string): Promise<void> {
@@ -53,6 +54,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       starScore: user.starScore,
       role: user.role,
       verifiedSchools: safeParse<string[]>(user.verifiedSchools, []),
+      trustScore: user.trustScore,
     };
   } catch {
     return null;

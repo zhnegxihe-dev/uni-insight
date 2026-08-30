@@ -19,19 +19,28 @@ export default async function PostsPage({
   const scenario = params.scenario ?? "";
 
   const where: Prisma.ExperiencePostWhereInput = { status: { not: "hidden" } };
-  if (POST_TYPES.some((p) => p.key === type)) where.postType = type;
+  if (type === "experience" || type === "avoid") {
+    where.postType = type;
+  } else {
+    where.postType = { not: "promo" }; // 信任池默认排除推广帖
+  }
   if (scenario && SCENARIOS.some((s) => s.type === scenario)) where.scenarioType = scenario;
 
   const posts = await prisma.experiencePost.findMany({
     where,
     include: {
-      author: { select: { nickname: true, verifiedSchools: true, level: true } },
+      author: { select: { nickname: true, verifiedSchools: true, level: true, trustScore: true } },
       school: { select: { id: true, name: true, slug: true } },
       major: { select: { id: true, name: true, slug: true } },
     },
     take: 60,
   });
-  const sorted = [...posts].sort((a, b) => hotScorePost(b) - hotScorePost(a));
+  // 信任池排序：热度 + 诚信分微调加权（诚信高的作者内容略优先）
+  const sorted = [...posts].sort(
+    (a, b) =>
+      hotScorePost(b) + (b.author?.trustScore ?? 0) * 0.001 -
+      (hotScorePost(a) + (a.author?.trustScore ?? 0) * 0.001)
+  );
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -40,10 +49,15 @@ export default async function PostsPage({
           <h1 className="text-xl font-semibold text-ink">经验帖 / 避雷帖</h1>
           <p className="mt-1 text-sm text-zinc-500">学长学姐的真实就读 / 申请 / 求职经验，以及踩过的坑</p>
         </div>
-        <Link href="/posts/new" className="btn-primary whitespace-nowrap">
-          <Plus className="h-4 w-4" />
-          写经验帖
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link href="/promo" className="btn-ghost whitespace-nowrap">
+            推广池
+          </Link>
+          <Link href="/posts/new" className="btn-primary whitespace-nowrap">
+            <Plus className="h-4 w-4" />
+            写经验帖
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -53,7 +67,7 @@ export default async function PostsPage({
         >
           全部
         </Link>
-        {POST_TYPES.map((item) => (
+        {POST_TYPES.filter((p) => p.key !== "promo").map((item) => (
           <Link
             key={item.key}
             href={`/posts?type=${item.key}`}
@@ -88,6 +102,7 @@ export default async function PostsPage({
               title={post.title}
               content={post.content}
               postType={post.postType}
+              merchantName={post.merchantName}
               images={JSON.parse(post.images) as string[]}
               likeCount={post.likeCount}
               favoriteCount={post.favoriteCount}

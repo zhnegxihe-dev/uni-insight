@@ -72,8 +72,13 @@ export default async function ProfilePage() {
                 <p className="text-sm text-zinc-500">{profile.bio || "这个人很懒，还没有写简介"}</p>
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <VerifiedBadge schools={schools} />
+              {user.trustScore >= 20 && (
+                <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700" title="诚信分 {user.trustScore}">
+                  透明分享者
+                </span>
+              )}
               <span className="text-xs text-zinc-400">注册于 {formatRelative(profile.createdAt)}</span>
             </div>
             {schools.length === 0 && (
@@ -171,7 +176,7 @@ export default async function ProfilePage() {
               <Link key={post.id} href={`/posts/${post.id}`} className="card block px-4 py-3 hover:border-zinc-300">
                 <p className="text-sm font-medium text-ink">{post.title}</p>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {post.postType === "avoid" ? "避雷帖" : "经验帖"} · {post.likeCount} 点赞 · {post.favoriteCount} 收藏 · {formatRelative(post.createdAt)}
+                  {post.postType === "avoid" ? "避雷帖" : post.postType === "promo" ? "推广帖" : "经验帖"} · {post.likeCount} 点赞 · {post.favoriteCount} 收藏 · {formatRelative(post.createdAt)}
                 </p>
               </Link>
             ))}

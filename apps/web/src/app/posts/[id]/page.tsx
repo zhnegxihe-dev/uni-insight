@@ -49,6 +49,7 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
   const folded = post.status === "folded";
   const typeMeta = POST_TYPES.find((p) => p.key === post.postType);
   const isAvoid = post.postType === "avoid";
+  const isPromo = post.postType === "promo";
   const images = safeParse<string[]>(post.images, []);
   const schools = safeParse<string[]>(post.author.verifiedSchools, []);
   const scenarioLabel = post.scenarioType
@@ -78,11 +79,17 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
       ) : (
         <section className="card p-6">
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className={isAvoid ? "rounded bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-600" : "rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-accent"}>
+            <span className={isAvoid ? "rounded bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-600" : isPromo ? "rounded bg-blue-600 px-1.5 py-0.5 text-xs font-medium text-white" : "rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-accent"}>
               {typeMeta?.label ?? post.postType}
+              {isPromo && post.merchantName ? ` · ${post.merchantName}` : ""}
             </span>
             {scenarioLabel && <span className="rounded bg-zinc-50 px-1.5 py-0.5 text-xs text-zinc-600">{scenarioLabel}</span>}
           </div>
+          {isPromo && (
+            <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+              受商家委托的推广内容，已在独立「推广池」明示标注，不进入经验帖/推荐流。内容仍接受点赞、收藏与评论区监督。
+            </div>
+          )}
           <h1 className="text-lg font-semibold leading-snug text-ink">{post.title}</h1>
           <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-500">
             {(post.school || post.major || post.course || post.teacher) && (

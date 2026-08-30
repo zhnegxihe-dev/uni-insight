@@ -9,6 +9,7 @@ interface ExperiencePostCardProps {
   title: string;
   content: string;
   postType: string;
+  merchantName?: string | null;
   images: string[];
   likeCount: number;
   favoriteCount: number;
@@ -24,6 +25,7 @@ export function ExperiencePostCard({
   title,
   content,
   postType,
+  merchantName,
   images,
   likeCount,
   favoriteCount,
@@ -35,6 +37,7 @@ export function ExperiencePostCard({
 }: ExperiencePostCardProps) {
   const typeMeta = POST_TYPES.find((p) => p.key === postType);
   const isAvoid = postType === "avoid";
+  const isPromo = postType === "promo";
   const schools = safeParse<string[]>(author.verifiedSchools, []);
   const cover = images[0];
 
@@ -46,10 +49,12 @@ export function ExperiencePostCard({
             <span
               className={cn(
                 "rounded px-1.5 py-0.5 text-xs font-medium",
-                isAvoid ? "bg-red-50 text-red-600" : "bg-blue-50 text-accent"
+                isAvoid ? "bg-red-50 text-red-600" : isPromo ? "bg-blue-600 text-white" : "bg-blue-50 text-accent"
               )}
+              title={isPromo ? "受商家委托的推广内容，已在独立推广池明示" : undefined}
             >
               {typeMeta?.label ?? postType}
+              {isPromo && merchantName ? ` · ${merchantName}` : ""}
             </span>
             {status === "folded" && (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">

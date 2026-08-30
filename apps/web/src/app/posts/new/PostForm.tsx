@@ -37,6 +37,7 @@ export function PostForm({ schools, majors, courses, teachers }: PostFormProps) 
   const [courseId, setCourseId] = useState("");
   const [teacherId, setTeacherId] = useState("");
   const [images, setImages] = useState<string[]>([]);
+  const [merchantName, setMerchantName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -57,6 +58,7 @@ export function PostForm({ schools, majors, courses, teachers }: PostFormProps) 
         majorId: majorId || null,
         courseId: courseId || null,
         teacherId: teacherId || null,
+        merchantName: postType === "promo" ? merchantName : null,
         images,
       }),
     });
@@ -87,7 +89,9 @@ export function PostForm({ schools, majors, courses, teachers }: PostFormProps) 
               postType === item.key
                 ? item.key === "avoid"
                   ? "border-red-300 bg-red-50 text-red-600"
-                  : "border-blue-300 bg-blue-50 text-accent"
+                  : item.key === "promo"
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-blue-300 bg-blue-50 text-accent"
                 : "border-line text-zinc-500 hover:bg-zinc-50"
             )}
           >
@@ -125,6 +129,29 @@ export function PostForm({ schools, majors, courses, teachers }: PostFormProps) 
         <label className="mb-1 block text-sm font-medium text-zinc-600">配图（可选）</label>
         <ImageUploader images={images} onChange={setImages} />
       </div>
+
+      {postType === "promo" && (
+        <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm font-medium text-blue-800">你正在发布商家推广帖</p>
+          <ul className="list-disc space-y-1 pl-5 text-xs text-blue-700">
+            <li>帖子将进入独立的「推广池」，获得商家付费推广位与专属曝光；</li>
+            <li>可领取商家报酬/佣金（平台担保）；</li>
+            <li>诚信分 +5，获得「透明分享者」徽章，你以后的真心经验帖会因诚信分被加权；</li>
+            <li>若你并未受商家委托，请勿勾选——虚假标注将被扣诚信分并降权。</li>
+          </ul>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-blue-800">商户名称（必填）</label>
+            <input
+              className="input"
+              value={merchantName}
+              onChange={(e) => setMerchantName(e.target.value)}
+              maxLength={50}
+              placeholder="如：东门老张烧烤、XX 考研机构"
+              required
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>

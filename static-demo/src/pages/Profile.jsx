@@ -27,8 +27,11 @@ export default function Profile() {
             <div>
               <h1 className="text-lg font-semibold text-ink">{user.nickname}</h1>
               <p className="text-sm text-zinc-500">{user.bio || "这个人很懒，还没有写简介"}</p>
-              <div className="mt-1.5 flex items-center gap-2">
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <VerifiedBadge schools={schools} />
+                {(user.trustScore ?? 0) >= 20 && (
+                  <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">透明分享者</span>
+                )}
               </div>
             </div>
           </div>
@@ -106,7 +109,7 @@ export default function Profile() {
               <Link key={post.id} to={`/posts/${post.id}`} className="card block px-4 py-3 hover:border-zinc-300">
                 <p className="text-sm font-medium text-ink">{post.title}</p>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {post.postType === "avoid" ? "避雷帖" : "经验帖"} · {db.starCountFor(state, "experience_post", post.id)} 点赞 · {db.favoriteCountFor(state, "experience_post", post.id)} 收藏 · {db.formatRelative(post.createdAt)}
+                  {post.postType === "avoid" ? "避雷帖" : post.postType === "promo" ? "推广帖" : "经验帖"} · {db.starCountFor(state, "experience_post", post.id)} 点赞 · {db.favoriteCountFor(state, "experience_post", post.id)} 收藏 · {db.formatRelative(post.createdAt)}
                 </p>
               </Link>
             ))}

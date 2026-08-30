@@ -20,6 +20,7 @@ model User {
   identity        String   @default("{}") // JSON: {role,targetSchool,targetMajor,region}
   status          String   @default("active") // active | suspended | banned
   role            String   @default("user") // user | admin
+  trustScore      Int      @default(0) // 诚信分：标注商家推广 +5，虚假标注扣分
   createdAt       DateTime @default(now())
 
   questions Question[]
@@ -350,6 +351,7 @@ model ExperiencePost {
   majorId       String?
   courseId      String?
   teacherId     String?
+  merchantName  String? // 商家推广帖的商户名称（postType=promo 时必填）
   images        String   @default("[]") // JSON: string[]（压缩后 data URL）
   likeCount     Int      @default(0)
   favoriteCount Int      @default(0)

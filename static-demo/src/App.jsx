@@ -22,6 +22,7 @@ import Posts from "./pages/Posts";
 import PostNew from "./pages/PostNew";
 import PostDetail from "./pages/PostDetail";
 import Schools from "./pages/Schools";
+import Promo from "./pages/Promo";
 
 function Header() {
   const state = useDb();
@@ -150,6 +151,7 @@ export default function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/levels" element={<Levels />} />
           <Route path="/schools" element={<Schools />} />
+          <Route path="/promo" element={<Promo />} />
           <Route path="/posts" element={<Posts />} />
           <Route path="/posts/new" element={<PostNew />} />
           <Route path="/posts/:id" element={<PostDetail />} />

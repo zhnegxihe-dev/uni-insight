@@ -314,6 +314,7 @@ export function ExperiencePostCard({ post }) {
   const schools = JSON.parse(author?.verifiedSchools || "[]");
   const typeMeta = db.POST_TYPES.find((p) => p.key === post.postType);
   const isAvoid = post.postType === "avoid";
+  const isPromo = post.postType === "promo";
   let images = [];
   try { images = JSON.parse(post.images || "[]"); } catch { images = []; }
   const cover = images[0];
@@ -324,8 +325,9 @@ export function ExperiencePostCard({ post }) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex items-center gap-2">
-            <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${isAvoid ? "bg-red-50 text-red-600" : "bg-blue-50 text-accent"}`}>
+            <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${isAvoid ? "bg-red-50 text-red-600" : isPromo ? "bg-blue-600 text-white" : "bg-blue-50 text-accent"}`}>
               {typeMeta?.label ?? post.postType}
+              {isPromo && post.merchantName ? ` · ${post.merchantName}` : ""}
             </span>
             {post.status === "folded" && (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">

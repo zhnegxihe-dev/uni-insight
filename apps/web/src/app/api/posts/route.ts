@@ -34,7 +34,13 @@ export async function GET(request: Request) {
   const q = (url.searchParams.get("q") ?? "").trim();
 
   const where: Prisma.ExperiencePostWhereInput = { status: { not: "hidden" } };
-  if (POST_TYPES.some((p) => p.key === type)) where.postType = type;
+  if (type === "promo") {
+    where.postType = "promo"; // 推广池
+  } else if (POST_TYPES.some((p) => p.key === type)) {
+    where.postType = type;
+  } else {
+    where.postType = { not: "promo" }; // 信任池默认排除推广帖
+  }
   if (scenario && SCENARIOS.some((s) => s.type === scenario)) where.scenarioType = scenario;
   if (q) where.OR = [{ title: { contains: q } }, { content: { contains: q } }];
 
@@ -57,6 +63,7 @@ export async function GET(request: Request) {
       content: post.content,
       postType: post.postType,
       scenarioType: post.scenarioType,
+      merchantName: post.merchantName,
       images: JSON.parse(post.images) as string[],
       likeCount: post.likeCount,
       favoriteCount: post.favoriteCount,
@@ -82,6 +89,7 @@ export async function POST(request: Request) {
   const majorId = body.majorId ? String(body.majorId) : null;
   const courseId = body.courseId ? String(body.courseId) : null;
   const teacherId = body.teacherId ? String(body.teacherId) : null;
+  const merchantName = body.merchantName ? String(body.merchantName).trim().slice(0, 50) : null;
   const images = validateImages(body.images);
   if (!images.ok) return NextResponse.json({ error: images.error }, { status: 400 });
 
@@ -89,6 +97,9 @@ export async function POST(request: Request) {
   if (!content) return NextResponse.json({ error: "请填写正文" }, { status: 400 });
   if (!POST_TYPES.some((p) => p.key === postType)) {
     return NextResponse.json({ error: "帖子类型不正确" }, { status: 400 });
+  }
+  if (postType === "promo" && !merchantName) {
+    return NextResponse.json({ error: "推广帖必须填写商户名称" }, { status: 400 });
   }
   if (scenarioType && !SCENARIOS.some((s) => s.type === scenarioType)) {
     return NextResponse.json({ error: "场景类型不正确" }, { status: 400 });
@@ -125,10 +136,23 @@ export async function POST(request: Request) {
       majorId,
       courseId,
       teacherId,
+      merchantName,
       images: JSON.stringify(images.images),
     },
     select: { id: true },
   });
+
+  // 标注商家推广 → 诚信分 +5（当日上限 5 篇，防止刷分）
+  if (postType === "promo") {
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const promoToday = await prisma.experiencePost.count({
+      where: { authorId: user.id, postType: "promo", createdAt: { gte: dayStart } },
+    });
+    if (promoToday <= 5) {
+      await prisma.user.update({ where: { id: user.id }, data: { trustScore: { increment: 5 } } });
+    }
+  }
 
   // 发帖行为写入画像（内容标签反向加到作者向量）
   const schoolName = schoolId ? (await prisma.school.findUnique({ where: { id: schoolId }, select: { name: true } }))?.name : null;

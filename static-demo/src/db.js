@@ -15,6 +15,7 @@ export const SCENARIOS = [
 export const POST_TYPES = [
   { key: "experience", label: "经验帖", hint: "分享真实就读 / 申请 / 求职经验" },
   { key: "avoid", label: "避雷帖", hint: "提醒踩过的坑，帮后来人避雷" },
+  { key: "promo", label: "推广帖", hint: "受商家委托的推荐，明示标注（独立推广池）" },
 ];
 
 export const SCENARIO_LABEL = {
@@ -119,6 +120,8 @@ export function loadState() {
           parsed.experiencePosts = seed.experiencePosts ? seed.experiencePosts.map((p) => ({ ...p })) : [];
         }
         if (!Array.isArray(parsed.myFavorites)) parsed.myFavorites = [];
+        for (const u of parsed.users) if (typeof u.trustScore !== "number") u.trustScore = 0;
+        for (const x of parsed.experiencePosts) if (!("merchantName" in x)) x.merchantName = null;
         for (const q of parsed.questions) if (typeof q.favoriteCount !== "number") q.favoriteCount = 0;
         for (const r of parsed.replies) if (typeof r.favoriteCount !== "number") r.favoriteCount = 0;
         for (const p of parsed.aiPosts) if (typeof p.favoriteCount !== "number") p.favoriteCount = 0;
@@ -166,6 +169,7 @@ export function registerUser(state, { nickname, email, password }) {
     verifiedSchools: "[]",
     level: 0,
     starScore: 0,
+    trustScore: 0,
     createdAt: new Date().toISOString(),
   };
   state.users.push(user);
@@ -274,7 +278,9 @@ export function createReply(state, questionId, content) {
 /* ---------- 经验帖 / 避雷帖 ---------- */
 export function getExperiencePosts(state, { type = "", scenario = "", q = "" } = {}) {
   let list = state.experiencePosts.filter((x) => x.status !== "hidden");
-  if (type === "experience" || type === "avoid") list = list.filter((x) => x.postType === type);
+  if (type === "promo") list = list.filter((x) => x.postType === "promo");
+  else if (type === "experience" || type === "avoid") list = list.filter((x) => x.postType === type);
+  else list = list.filter((x) => x.postType !== "promo"); // 信任池默认排除推广帖
   if (scenario) list = list.filter((x) => x.scenarioType === scenario);
   if (q) {
     const kw = q.toLowerCase();
@@ -297,12 +303,13 @@ export function getExperiencePost(state, id) {
   };
 }
 
-export function createExperiencePost(state, { title, content, postType, scenarioType, schoolId, majorId, courseId, teacherId, images }) {
+export function createExperiencePost(state, { title, content, postType, scenarioType, schoolId, majorId, courseId, teacherId, images, merchantName }) {
   const user = getCurrentUser(state);
   if (!user) throw new Error("请先登录");
   if (!title) throw new Error("请填写标题");
   if (!content) throw new Error("请填写正文");
-  if (!["experience", "avoid"].includes(postType)) throw new Error("帖子类型不正确");
+  if (!["experience", "avoid", "promo"].includes(postType)) throw new Error("帖子类型不正确");
+  if (postType === "promo" && !merchantName) throw new Error("推广帖必须填写商户名称");
   if (/微信|qq|vx|手机号|电话|保录取|代写|收款|扫码|加我|联系我|http|转账/i.test(title + content)) {
     throw new Error("内容疑似广告/中介，请移除联系方式或营销信息");
   }
@@ -317,6 +324,7 @@ export function createExperiencePost(state, { title, content, postType, scenario
     majorId: majorId || null,
     courseId: courseId || null,
     teacherId: teacherId || null,
+    merchantName: postType === "promo" ? merchantName : null,
     images: JSON.stringify(images || []),
     likeCount: 0,
     favoriteCount: 0,
@@ -324,6 +332,10 @@ export function createExperiencePost(state, { title, content, postType, scenario
     createdAt: new Date().toISOString(),
   };
   state.experiencePosts.push(post);
+  // 标注商家推广 → 诚信分 +5（简单实现，不设日上限的防刷在真实后端）
+  if (postType === "promo") {
+    user.trustScore = (user.trustScore || 0) + 5;
+  }
   saveState(state);
   return post;
 }
@@ -641,7 +653,7 @@ export function search(state, q) {
     majors: state.majors.filter((m) => m.name.toLowerCase().includes(kw)).slice(0, 5),
     courses: state.courses.filter((c) => c.name.toLowerCase().includes(kw)).slice(0, 6),
     teachers: state.teachers.filter((t) => t.name.toLowerCase().includes(kw) || (t.department || "").toLowerCase().includes(kw)).slice(0, 6),
-    experiencePosts: state.experiencePosts.filter((x) => x.status !== "hidden" && (x.title.toLowerCase().includes(kw) || x.content.toLowerCase().includes(kw))).slice(0, 6),
+    experiencePosts: state.experiencePosts.filter((x) => x.status !== "hidden" && x.postType !== "promo" && (x.title.toLowerCase().includes(kw) || x.content.toLowerCase().includes(kw))).slice(0, 6),
   };
 }
 
