@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { POST_TYPES, SCENARIOS } from "@/lib/core";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
-import { checkContentForUser, moderationErrorMessage } from "@/lib/moderation";
+import { allSoftAdHits, checkContentForUser, moderationErrorMessage } from "@/lib/moderation";
 import { hotScorePost, recordAction, tagsOfExperiencePost } from "@/lib/recommend";
 
 const IMAGE_PREFIX = /^data:image\/(png|jpeg|webp|gif);base64,/;
@@ -106,10 +106,15 @@ export async function POST(request: Request) {
   }
 
   // 广告词库 + 正则拦截（标题 + 正文）
+  // 推广帖（promo）允许中性营销词（推广/广告/宣传等），但联系方式/承诺/收款等硬信号仍全拦
   const titleCheck = checkContentForUser(title, user.level);
   const contentCheck = checkContentForUser(content, user.level);
-  if (!titleCheck.ok) return NextResponse.json({ error: moderationErrorMessage(titleCheck) }, { status: 400 });
-  if (!contentCheck.ok) return NextResponse.json({ error: moderationErrorMessage(contentCheck) }, { status: 400 });
+  if (!titleCheck.ok && !(postType === "promo" && allSoftAdHits(titleCheck.hits))) {
+    return NextResponse.json({ error: moderationErrorMessage(titleCheck) }, { status: 400 });
+  }
+  if (!contentCheck.ok && !(postType === "promo" && allSoftAdHits(contentCheck.hits))) {
+    return NextResponse.json({ error: moderationErrorMessage(contentCheck) }, { status: 400 });
+  }
 
   // 关联档案存在性校验
   if (schoolId && !(await prisma.school.findUnique({ where: { id: schoolId }, select: { id: true } }))) {

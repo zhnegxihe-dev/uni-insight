@@ -137,6 +137,18 @@ export function checkContentForUser(text: string, level: number): ModerationResu
   return result;
 }
 
+/** 中性营销词（推广/广告/宣传/种草/商家等）：仅在推广帖（promo）场景放行，硬信号仍全拦 */
+const SOFT_AD_HINTS = ["推广", "广告", "宣传", "种草", "商家", "推荐", "种草文"];
+
+export function isSoftAdHit(hit: ModerationHit): boolean {
+  return hit.rule.startsWith("keyword:") && SOFT_AD_HINTS.some((word) => hit.rule.includes(word));
+}
+
+/** 判断一组命中是否全部为中性营销词（用于 promo 帖放行） */
+export function allSoftAdHits(hits: ModerationHit[]): boolean {
+  return hits.length > 0 && hits.every(isSoftAdHit);
+}
+
 export function moderationErrorMessage(result: ModerationResult): string {
   const labels = result.hits.slice(0, 3).map((hit) => hit.label).join("、");
   return `内容疑似广告/中介，已拦截（命中：${labels}）。请移除联系方式、链接或营销内容后重试。`;
