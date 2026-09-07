@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BadgeCheck, Bookmark, Heart, MessageSquare, ShieldAlert, Sparkles, Star } from "lucide-react";
+import { BadgeCheck, Bookmark, CornerUpRight, Heart, MessageSquare, ShieldAlert, Sparkles, Star } from "lucide-react";
 import { useDb, act } from "./store";
 import * as db from "./db";
 
@@ -332,6 +332,11 @@ export function ExperiencePostCard({ post }) {
             {post.status === "folded" && (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
                 <ShieldAlert className="h-3.5 w-3.5" />已折叠
+              </span>
+            )}
+            {post.sourceReplyId && (
+              <span className="inline-flex items-center gap-1 rounded bg-violet-50 px-1.5 py-0.5 text-[11px] font-medium text-violet-600" title="这条帖子由一条回复升级/引用而来">
+                <CornerUpRight className="h-3 w-3" />由回复生成
               </span>
             )}
           </div>

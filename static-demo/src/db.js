@@ -125,6 +125,18 @@ export function loadState() {
         for (const q of parsed.questions) if (typeof q.favoriteCount !== "number") q.favoriteCount = 0;
         for (const r of parsed.replies) if (typeof r.favoriteCount !== "number") r.favoriteCount = 0;
         for (const p of parsed.aiPosts) if (typeof p.favoriteCount !== "number") p.favoriteCount = 0;
+        for (const r of parsed.replies) {
+          if (!("parentReplyId" in r)) r.parentReplyId = null;
+        }
+        for (const q of parsed.questions) {
+          if (!("forkedFromQuestionId" in q)) q.forkedFromQuestionId = null;
+          if (!("forkedFromReplyIds" in q)) q.forkedFromReplyIds = "[]";
+        }
+        for (const x of parsed.experiencePosts) {
+          if (!("sourceReplyId" in x)) x.sourceReplyId = null;
+          if (!("sourceQuestionId" in x)) x.sourceQuestionId = null;
+        }
+
         saveState(parsed);
         return parsed;
       }
@@ -250,27 +262,124 @@ export function createQuestion(state, { title, description, scenarioType, scenar
   return question;
 }
 
-export function createReply(state, questionId, content) {
+export function createQuestionFork(state, { title, description, originQuestionId, forkedFromReplyIds }) {
+  const user = getCurrentUser(state);
+  if (!user) throw new Error("请先登录");
+  if (!title) throw new Error("请填写标题");
+  const origin = state.questions.find((q) => q.id === originQuestionId);
+  if (!origin || origin.status === "hidden") throw new Error("来源问题不存在或已被隐藏");
+  const ids = (forkedFromReplyIds || []).slice(0, 5);
+  const replies = state.replies.filter((r) => ids.includes(r.id) && r.questionId === originQuestionId && r.status !== "hidden");
+  if (replies.length !== ids.length) throw new Error("引用的回复不存在或已被隐藏");
+  const canFork = origin.authorId === user.id || replies.some((r) => r.authorId === user.id);
+  if (!canFork) throw new Error("只能转自己参与讨论的回复为帖子");
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const todayCount = state.questions.filter(
+    (q) => q.authorId === user.id && q.forkedFromQuestionId && new Date(q.createdAt) >= dayStart
+  ).length;
+  if (todayCount >= 5) throw new Error("今日转帖已达上限（5 次），明天再来吧");
+  const nameOf = (authorId) => (authorId === user.id ? "我" : (state.users.find((u) => u.id === authorId)?.nickname ?? "对方"));
+  const quoted = replies
+    .map((r) => `· @${nameOf(r.authorId)}：${r.content.length > 90 ? r.content.slice(0, 90) + "…" : r.content}`)
+    .join("\n");
+  const snapshot = `转自《${origin.title}》的讨论（引用快照，不可编辑）：\n${quoted}`;
+  const finalDescription = ((description ? description + "\n\n" : "") + snapshot).slice(0, 300);
+  const question = {
+    id: uid("q"),
+    title,
+    description: finalDescription,
+    authorId: user.id,
+    scenarioType: origin.scenarioType,
+    scenarioMeta: origin.scenarioMeta,
+    degreeLevel: origin.degreeLevel || "bachelor",
+    replyCount: 0,
+    starCount: 0,
+    favoriteCount: 0,
+    acceptedReplyId: null,
+    forkedFromQuestionId: origin.id,
+    forkedFromReplyIds: JSON.stringify(replies.map((r) => r.id)),
+    status: "visible",
+    createdAt: new Date().toISOString(),
+  };
+  state.questions.push(question);
+  const originQTs = state.questionTags.filter((qt) => qt.questionId === origin.id);
+  for (const qt of originQTs) state.questionTags.push({ questionId: question.id, tagId: qt.tagId });
+  for (const r of replies) {
+    if (r.authorId !== user.id) {
+      const author = state.users.find((u) => u.id === r.authorId);
+      notify(state, r.authorId, "reply", { type: "fork", actorId: user.id, actorName: user.nickname, questionId: question.id, questionTitle: title, originQuestionTitle: origin.title });
+    }
+  }
+  saveState(state);
+  return question;
+}
+
+export function getRelatedDerived(state, questionId) {
+  const forkedQuestions = state.questions
+    .filter((q) => q.forkedFromQuestionId === questionId && q.status !== "hidden")
+    .map((q) => ({ ...q, author: state.users.find((u) => u.id === q.authorId) }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const derivedPosts = state.experiencePosts
+    .filter((p) => p.sourceQuestionId === questionId && p.status !== "hidden" && p.postType !== "promo")
+    .map((p) => ({ ...p, author: state.users.find((u) => u.id === p.authorId) }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return { forkedQuestions, derivedPosts };
+}
+
+export function postSource(state, post) {
+  if (!post.sourceReplyId || !post.sourceQuestionId) return null;
+  const reply = state.replies.find((r) => r.id === post.sourceReplyId) ?? null;
+  const question = state.questions.find((q) => q.id === post.sourceQuestionId) ?? null;
+  if (!reply || !question) return null;
+  const replyAuthor = state.users.find((u) => u.id === reply.authorId);
+  const degraded = reply.status !== "visible" || question.status !== "visible";
+  return {
+    reply,
+    question,
+    replyAuthorName: replyAuthor?.nickname ?? "对方",
+    replyAuthorId: reply.authorId,
+    replySnippet: reply.content.length > 60 ? reply.content.slice(0, 60) + "…" : reply.content,
+    isQuote: reply.authorId !== post.authorId,
+    degraded,
+  };
+}
+
+export function createReply(state, questionId, content, opts = {}) {
   const user = getCurrentUser(state);
   if (!user) throw new Error("请先登录");
   if (!content) throw new Error("回复内容不能为空");
   if (content.length > 280) throw new Error("回复最多 280 字");
   const question = state.questions.find((x) => x.id === questionId);
   if (!question) throw new Error("问题不存在");
+  const parentReplyId = opts.parentReplyId || null;
+  let parentReply = null;
+  if (parentReplyId) {
+    parentReply = state.replies.find((r) => r.id === parentReplyId) ?? null;
+    if (!parentReply) throw new Error("要回复的回复不存在");
+    if (parentReply.questionId !== questionId) throw new Error("只能回复同一问题下的回复");
+    if (parentReply.status === "hidden") throw new Error("该回复已被隐藏，无法追问");
+    if (parentReply.parentReplyId) throw new Error("追问只支持一层，请回到原回复下继续");
+  }
   const reply = {
     id: uid("r"),
     questionId,
     authorId: user.id,
     content,
+    parentReplyId,
     starCount: 0,
+    favoriteCount: 0,
     isAccepted: false,
     status: "visible",
     createdAt: new Date().toISOString(),
   };
   state.replies.push(reply);
   question.replyCount += 1;
+  if (parentReply && parentReply.authorId !== user.id && parentReply.authorId !== question.authorId) {
+    notify(state, parentReply.authorId, "reply", { type: "reply", actorId: user.id, actorName: user.nickname, questionId, questionTitle: question.title, replyId: reply.id, parentReply: true });
+  }
   if (question.authorId !== user.id) {
-    notify(state, question.authorId, "reply", { type: "reply", actorId: user.id, questionId, questionTitle: question.title });
+    notify(state, question.authorId, "reply", { type: "reply", actorId: user.id, actorName: user.nickname, questionId, questionTitle: question.title, replyId: reply.id });
   }
   saveState(state);
   return reply;
@@ -303,7 +412,7 @@ export function getExperiencePost(state, id) {
   };
 }
 
-export function createExperiencePost(state, { title, content, postType, scenarioType, schoolId, majorId, courseId, teacherId, images, merchantName }) {
+export function createExperiencePost(state, { title, content, postType, scenarioType, schoolId, majorId, courseId, teacherId, images, merchantName, mode, sourceReplyId, sourceQuestionId }) {
   const user = getCurrentUser(state);
   if (!user) throw new Error("请先登录");
   if (!title) throw new Error("请填写标题");
@@ -312,6 +421,22 @@ export function createExperiencePost(state, { title, content, postType, scenario
   if (postType === "promo" && !merchantName) throw new Error("推广帖必须填写商户名称");
   if (/微信|qq|vx|手机号|电话|保录取|代写|收款|扫码|加我|联系我|http|转账/i.test(title + content)) {
     throw new Error("内容疑似广告/中介，请移除联系方式或营销信息");
+  }
+  // 回复升级/引用来源校验（对应主应用 API，本地简化防刷：同一作者同一回复只能一次）
+  let srcReply = null;
+  const srcId = sourceReplyId || null;
+  if (srcId) {
+    srcReply = state.replies.find((r) => r.id === srcId) ?? null;
+    if (!srcReply) throw new Error("来源回复不存在");
+    if (srcReply.status === "hidden") throw new Error("来源回复已被隐藏，无法操作");
+    if (sourceQuestionId && srcReply.questionId !== sourceQuestionId) throw new Error("来源问题与回复不匹配");
+    const dup = state.experiencePosts.some((x) => x.sourceReplyId === srcId && x.authorId === user.id);
+    if (dup) throw new Error("这条回复你已升级/引用过帖子了");
+    if (srcReply.authorId !== user.id && mode !== "quote") throw new Error("只能将自己发布的回复升级为帖子；引用他人的回复请使用「引用发帖」");
+    if (mode === "quote") {
+      const ownPart = content.split(srcReply.content).join("").replace(/[\s“”"「」『』《》【】（）()：:，,。.、；;…\-]/g, "");
+      if (ownPart.length < 10) throw new Error("引用发帖需在原回复基础上补充至少 10 字自己的内容");
+    }
   }
   const post = {
     id: uid("p"),
@@ -326,15 +451,21 @@ export function createExperiencePost(state, { title, content, postType, scenario
     teacherId: teacherId || null,
     merchantName: postType === "promo" ? merchantName : null,
     images: JSON.stringify(images || []),
+    sourceReplyId: srcReply ? srcReply.id : null,
+    sourceQuestionId: srcReply ? srcReply.questionId : (sourceQuestionId || null),
+    mode: mode === "quote" ? "quote" : "upgrade",
     likeCount: 0,
     favoriteCount: 0,
     status: "visible",
     createdAt: new Date().toISOString(),
   };
   state.experiencePosts.push(post);
-  // 标注商家推广 → 诚信分 +5（简单实现，不设日上限的防刷在真实后端）
   if (postType === "promo") {
     user.trustScore = (user.trustScore || 0) + 5;
+  }
+  if (srcReply && mode === "quote" && srcReply.authorId !== user.id) {
+    const srcAuthor = state.users.find((u) => u.id === srcReply.authorId);
+    notify(state, srcReply.authorId, "reply", { type: "quote", actorId: user.id, actorName: user.nickname, postId: post.id, postKind: "experience_post", questionId: srcReply.questionId, sourceReplyId: srcReply.id });
   }
   saveState(state);
   return post;
