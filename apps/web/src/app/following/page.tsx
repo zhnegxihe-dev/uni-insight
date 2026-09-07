@@ -106,6 +106,8 @@ export default async function FollowingPage() {
                     createdAt={post.createdAt}
                     school={post.school}
                     major={post.major}
+
+                    fromReply={Boolean(post.sourceReplyId)}
                     author={post.author}
                   />
                 ))}

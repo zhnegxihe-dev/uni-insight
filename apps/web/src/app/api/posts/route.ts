@@ -69,6 +69,8 @@ export async function GET(request: Request) {
       favoriteCount: post.favoriteCount,
       status: post.status,
       createdAt: post.createdAt,
+
+      fromReply: Boolean(post.sourceReplyId),
       author: post.author,
       school: post.school,
       major: post.major,
@@ -91,6 +93,9 @@ export async function POST(request: Request) {
   const teacherId = body.teacherId ? String(body.teacherId) : null;
   const merchantName = body.merchantName ? String(body.merchantName).trim().slice(0, 50) : null;
   const images = validateImages(body.images);
+  const sourceReplyId = body.sourceReplyId ? String(body.sourceReplyId) : null;
+  const sourceQuestionId = body.sourceQuestionId ? String(body.sourceQuestionId) : null;
+  const mode = body.mode === "quote" ? "quote" : "upgrade"; // upgrade=升级自己的回复；quote=引用他人回复发帖
   if (!images.ok) return NextResponse.json({ error: images.error }, { status: 400 });
 
   if (!title) return NextResponse.json({ error: "请填写标题" }, { status: 400 });
@@ -130,6 +135,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "关联教师不存在" }, { status: 400 });
   }
 
+  // —— 回复升级为帖子（蓝图 v4.6 §8.16）：仅允许升级自己可见的回复，同一条回复只能升级一次 ——
+  let sourceReply: { id: string; questionId: string; authorId: string; status: string; content: string } | null = null;
+  if (sourceReplyId) {
+    sourceReply = await prisma.reply.findUnique({
+      where: { id: sourceReplyId },
+      select: { id: true, questionId: true, authorId: true, status: true, content: true },
+    });
+    if (!sourceReply) return NextResponse.json({ error: "来源回复不存在" }, { status: 400 });
+    if (sourceReply.status === "hidden") return NextResponse.json({ error: "来源回复已被隐藏，无法升级" }, { status: 400 });
+    if (sourceReply.authorId !== user.id && mode !== "quote") {
+      return NextResponse.json({ error: "只能将自己发布的回复升级为帖子；引用他人的回复请使用「引用发帖」" }, { status: 400 });
+    }
+    if (mode === "quote") {
+      const ownPart = content
+        .split(sourceReply.content)
+        .join("")
+        .replace(/[\s“”"「」『』《》【】（）()：:，,。.、；;…\-]+/g, "");
+      if (ownPart.length < 10) return NextResponse.json({ error: "引用发帖需在原回复基础上补充至少 10 字自己的内容" }, { status: 400 });
+    }
+    if (sourceQuestionId && sourceReply.questionId !== sourceQuestionId) {
+      return NextResponse.json({ error: "来源问题与回复不匹配" }, { status: 400 });
+    }
+    const existingUpgrade = await prisma.experiencePost.findFirst({
+      where: { sourceReplyId, authorId: user.id },
+      select: { id: true },
+    });
+    if (existingUpgrade) return NextResponse.json({ error: "这条回复你已升级/引用过帖子了" }, { status: 400 });
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const upgradeToday = await prisma.experiencePost.count({
+      where: { authorId: user.id, sourceReplyId: { not: null }, createdAt: { gte: dayStart } },
+    });
+    if (upgradeToday >= 5) return NextResponse.json({ error: "今日回复升级帖子已达上限（5 次），明天再来吧" }, { status: 400 });
+  }
+
   const post = await prisma.experiencePost.create({
     data: {
       authorId: user.id,
@@ -143,6 +183,8 @@ export async function POST(request: Request) {
       teacherId,
       merchantName,
       images: JSON.stringify(images.images),
+      sourceReplyId: sourceReply?.id ?? null,
+      sourceQuestionId: sourceReply?.questionId ?? (sourceQuestionId || null),
     },
     select: { id: true },
   });
@@ -157,6 +199,23 @@ export async function POST(request: Request) {
     if (promoToday <= 5) {
       await prisma.user.update({ where: { id: user.id }, data: { trustScore: { increment: 5 } } });
     }
+  }
+
+  // 引用他人回复发帖：通知被引用作者
+  if (sourceReply && mode === "quote" && sourceReply.authorId !== user.id) {
+    await prisma.notification.create({
+      data: {
+        userId: sourceReply.authorId,
+        type: "reply",
+        payload: JSON.stringify({
+          type: "quote",
+          actorId: user.id,
+          postId: post.id,
+          postKind: "experience_post",
+          questionId: sourceReply.questionId,
+        }),
+      },
+    });
   }
 
   // 发帖行为写入画像（内容标签反向加到作者向量）

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Bell, Bookmark, CheckCircle2, Heart, MessageSquare, Sparkles, UserPlus, XCircle } from "lucide-react";
+import { ArrowUpRight, Bell, Bookmark, CheckCircle2, Heart, MessageSquare, Sparkles, UserPlus, XCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { formatRelative, safeParse } from "@/lib/format";
@@ -19,10 +19,12 @@ interface NotificationItem {
 
 function NotificationRow({ item }: { item: NotificationItem }) {
   const payload = item.payload;
-  const sub = payload.type === "message" ? "message" : item.type;
+  const sub = typeof payload.type === "string" && ["message", "fork", "quote"].includes(payload.type) ? payload.type : item.type;
   const href =
-    payload.questionId && typeof payload.questionId === "string"
-      ? `/question/${payload.questionId}`
+    payload.type === "quote" && payload.postId && typeof payload.postId === "string"
+      ? `/posts/${payload.postId}`
+      : payload.questionId && typeof payload.questionId === "string"
+        ? `/question/${payload.questionId}`
       : payload.conversationId && typeof payload.conversationId === "string"
         ? `/messages/${payload.conversationId}`
         : payload.postId && typeof payload.postId === "string"

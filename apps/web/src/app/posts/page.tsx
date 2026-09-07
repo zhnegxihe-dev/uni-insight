@@ -119,6 +119,8 @@ export default async function PostsPage({
               createdAt={post.createdAt}
               school={post.school}
               major={post.major}
+
+              fromReply={Boolean(post.sourceReplyId)}
               author={post.author}
             />
           ))}

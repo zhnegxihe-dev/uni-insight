@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Bookmark, ChevronLeft, Heart, ShieldAlert } from "lucide-react";
+import { Bookmark, ChevronLeft, CornerUpRight, Heart, ShieldAlert } from "lucide-react";
 import { POST_TYPES, SCENARIO_LABEL } from "@/lib/core";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
@@ -12,6 +12,7 @@ import { ReportButton } from "@/components/ReportButton";
 import { ImageGallery } from "@/components/ImageGallery";
 import { TrackView } from "@/components/TrackView";
 import { tagsOfExperiencePost } from "@/lib/recommend";
+import { ShareCardButton } from "@/components/ShareCardButton";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,37 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
     favorited = Boolean(fav);
   }
 
+  let source: {
+    questionId: string;
+    questionTitle: string;
+    replyAuthorName: string;
+    replyAuthorId: string;
+    replySnippet: string;
+    degraded: boolean;
+    isQuote: boolean;
+  } | null = null;
+  if (post.sourceReplyId && post.sourceQuestionId) {
+    const [sr, sq] = await Promise.all([
+      prisma.reply.findUnique({
+        where: { id: post.sourceReplyId },
+        select: { content: true, status: true, author: { select: { id: true, nickname: true } } },
+      }),
+      prisma.question.findUnique({ where: { id: post.sourceQuestionId }, select: { title: true } }),
+    ]);
+    if (sr && sq) {
+      const degraded = sr.status !== "visible";
+      source = {
+        questionId: post.sourceQuestionId,
+        questionTitle: sq.title,
+        replyAuthorName: sr.author.nickname,
+        replyAuthorId: sr.author.id,
+        replySnippet: degraded ? "" : sr.content.length > 60 ? sr.content.slice(0, 60) + "…" : sr.content,
+        degraded,
+        isQuote: sr.author.id !== post.authorId,
+      };
+    }
+  }
+
   const hidden = post.status === "hidden";
   const folded = post.status === "folded";
   const typeMeta = POST_TYPES.find((p) => p.key === post.postType);
@@ -54,6 +86,10 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
   const schools = safeParse<string[]>(post.author.verifiedSchools, []);
   const scenarioLabel = post.scenarioType
     ? SCENARIO_LABEL[post.scenarioType as keyof typeof SCENARIO_LABEL] ?? post.scenarioType
+    : null;
+
+  const sourceText = source && !source.degraded
+    ? `${source.isQuote ? "引用了" : "由"} @${source.replyAuthorName} 的回复 · 转自《${source.questionTitle}》`
     : null;
 
   return (
@@ -85,11 +121,36 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
             </span>
             {scenarioLabel && <span className="rounded bg-zinc-50 px-1.5 py-0.5 text-xs text-zinc-600">{scenarioLabel}</span>}
           </div>
-          {isPromo && (
-            <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
-              受商家委托的推广内容，已明示标注为「推广帖」并带商户名角标，不进入信任流推荐。内容仍接受点赞、收藏与评论区监督。
+
+          {source && source.degraded && (
+            <div className="mb-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-700">
+              <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                来源回复已被折叠或隐藏（原文不再展示），本帖为作者后续创作的内容。
+                {source.questionId && (
+                  <Link href={`/question/${source.questionId}`} className="ml-1 font-medium underline">
+                    查看原问题
+                  </Link>
+                )}
+              </span>
             </div>
           )}
+
+          {source && !source.degraded && (
+            <div className="mb-3 flex items-start gap-2 rounded-md border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs text-zinc-600">
+              <CornerUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+              <span>
+                本帖{source.isQuote ? "引用" : "由"} <span className="font-medium text-zinc-700">@{source.replyAuthorName}</span> 的回复
+                {source.isQuote ? "展开创作而来，转自" : "升级而来，转自"}
+                <Link href={`/question/${source.questionId}`} className="mx-1 font-medium text-accent hover:underline">
+                  《{source.questionTitle}》
+                </Link>
+                {source.isQuote ? "，原回复作者会收到通知。" : "，原文回复仍保留在原问题下。"}
+                {!source.isQuote && ` 回复：「${source.replySnippet}」`}
+              </span>
+            </div>
+          )}
+
           <h1 className="text-lg font-semibold leading-snug text-ink">{post.title}</h1>
           <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-500">
             {(post.school || post.major || post.course || post.teacher) && (
@@ -128,7 +189,7 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
 
           <ImageGallery images={images} />
 
-          <div className="mt-5 flex items-center justify-between border-t border-line pt-3">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
             <div className="flex items-center gap-2">
               <LikeButton endpoint={`/api/posts/${post.id}/like`} count={post.likeCount} active={liked} label="这篇经验有帮助" />
               <FavoriteButton endpoint={`/api/posts/${post.id}/favorite`} count={post.favoriteCount} active={favorited} label="收藏这篇经验帖" />
@@ -136,7 +197,20 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
                 <Heart className="h-3.5 w-3.5 text-rose-400" /> 点赞 · <Bookmark className="h-3.5 w-3.5 text-blue-400" /> 收藏
               </span>
             </div>
-            <ReportButton targetType="experience_post" targetId={post.id} />
+            <div className="flex items-center gap-2">
+              <ShareCardButton
+                id={post.id}
+                kind="post"
+                title={post.title}
+                content={post.content}
+                typeLabel={typeMeta?.label ?? post.postType}
+                authorName={post.author.nickname}
+                authorBadge={schools[0]}
+                sourceText={sourceText}
+                accent={isAvoid ? "red" : "blue"}
+              />
+              <ReportButton targetType="experience_post" targetId={post.id} />
+            </div>
           </div>
         </section>
       )}

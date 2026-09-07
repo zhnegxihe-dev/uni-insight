@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bookmark, Heart, ShieldAlert } from "lucide-react";
+import { Bookmark, CornerUpRight, Heart, ShieldAlert } from "lucide-react";
 import { POST_TYPES } from "@/lib/core";
 import { cn, formatRelative, safeParse } from "@/lib/format";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -15,6 +15,7 @@ interface ExperiencePostCardProps {
   favoriteCount: number;
   status: string;
   createdAt: Date;
+  fromReply?: boolean;
   school?: { name: string; slug: string } | null;
   major?: { name: string; slug: string } | null;
   author: { nickname: string; verifiedSchools: string; level: number };
@@ -31,6 +32,7 @@ export function ExperiencePostCard({
   favoriteCount,
   status,
   createdAt,
+  fromReply,
   school,
   major,
   author,
@@ -60,6 +62,12 @@ export function ExperiencePostCard({
               <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
                 <ShieldAlert className="h-3.5 w-3.5" />
                 已折叠
+              </span>
+            )}
+            {fromReply && (
+              <span className="inline-flex items-center gap-1 rounded bg-violet-50 px-1.5 py-0.5 text-[11px] font-medium text-violet-600" title="这条帖子由一条回复升级/引用而来，可点击进入查看来源">
+                <CornerUpRight className="h-3 w-3" />
+                由回复生成
               </span>
             )}
           </div>

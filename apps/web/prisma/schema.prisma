@@ -114,6 +114,8 @@ model Question {
   starCount       Int      @default(0) // 点赞数（原 star，语义改为点赞）
   favoriteCount   Int      @default(0)
   acceptedReplyId String?
+  forkedFromQuestionId String? // 转新帖：来源问题（v4.6 §8.16 / §8.14）
+  forkedFromReplyIds   String   @default("[]") // 转新帖：引用快照来源回复 id[]（v4.6 §8.16 / §8.14）
   isLocked        Boolean  @default(false)
   status          String   @default("visible") // visible | folded | hidden
   createdAt       DateTime @default(now())
@@ -137,8 +139,14 @@ model Reply {
   status     String   @default("visible") // visible | folded | hidden
   createdAt  DateTime @default(now())
 
-  question Question @relation(fields: [questionId], references: [id])
-  author   User     @relation(fields: [authorId], references: [id])
+  parentReplyId String?
+
+  question     Question @relation(fields: [questionId], references: [id])
+  author       User     @relation(fields: [authorId], references: [id])
+  parentReply  Reply?   @relation("ReplyReplies", fields: [parentReplyId], references: [id])
+  childReplies Reply[]  @relation("ReplyReplies")
+
+  @@index([questionId, parentReplyId])
 }
 
 model ContentStar {
@@ -353,6 +361,8 @@ model ExperiencePost {
   teacherId     String?
   merchantName  String? // 商家推广帖的商户名称（postType=promo 时必填）
   images        String   @default("[]") // JSON: string[]（压缩后 data URL）
+  sourceReplyId    String? // 由某条回复升级而来（回复→帖子），用于回源与防重复升级（v4.6 §8.16）
+  sourceQuestionId String? // 来源回复所在问题（冗余存储，便于详情页回源展示）（v4.6 §8.16）
   likeCount     Int      @default(0)
   favoriteCount Int      @default(0)
   status        String   @default("visible") // visible | folded | hidden
@@ -367,4 +377,5 @@ model ExperiencePost {
 
   @@index([postType, status])
   @@index([authorId, createdAt])
+  @@unique([sourceReplyId, authorId]) // 同一作者对同一条回复最多升级/引用一次；不同作者可各自引用同一回复
 }
