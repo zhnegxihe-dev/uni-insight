@@ -26,6 +26,7 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
       major: { select: { id: true, name: true, slug: true } },
       course: { select: { id: true, name: true, code: true } },
       teacher: { select: { id: true, name: true, title: true } },
+      merchant: { select: { id: true, name: true, tier: true, category: true } },
     },
   });
   if (!post) notFound();
@@ -115,10 +116,20 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
       ) : (
         <section className="card p-6">
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className={isAvoid ? "rounded bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-600" : isPromo ? "rounded bg-blue-600 px-1.5 py-0.5 text-xs font-medium text-white" : "rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-accent"}>
-              {typeMeta?.label ?? post.postType}
-              {isPromo && post.merchantName ? ` · ${post.merchantName}` : ""}
-            </span>
+            {isPromo && post.merchant ? (
+              <Link
+                href={`/merchant/${post.merchant.id}`}
+                className="rounded bg-blue-600 px-1.5 py-0.5 text-xs font-medium text-white transition hover:bg-blue-700"
+                title="查看该商户主页（聚合全部推广与评价）"
+              >
+                {typeMeta?.label ?? post.postType} · {post.merchant.name}
+              </Link>
+            ) : (
+              <span className={isAvoid ? "rounded bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-600" : isPromo ? "rounded bg-blue-600 px-1.5 py-0.5 text-xs font-medium text-white" : "rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-accent"}>
+                {typeMeta?.label ?? post.postType}
+                {isPromo && post.merchantName ? ` · ${post.merchantName}` : ""}
+              </span>
+            )}
             {scenarioLabel && <span className="rounded bg-zinc-50 px-1.5 py-0.5 text-xs text-zinc-600">{scenarioLabel}</span>}
           </div>
 

@@ -10,6 +10,7 @@ interface ExperiencePostCardProps {
   content: string;
   postType: string;
   merchantName?: string | null;
+  merchant?: { id: string; name: string; tier: string; category: string } | null;
   images: string[];
   likeCount: number;
   favoriteCount: number;
@@ -27,6 +28,7 @@ export function ExperiencePostCard({
   content,
   postType,
   merchantName,
+  merchant,
   images,
   likeCount,
   favoriteCount,
@@ -48,16 +50,42 @@ export function ExperiencePostCard({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                "rounded px-1.5 py-0.5 text-xs font-medium",
-                isAvoid ? "bg-red-50 text-red-600" : isPromo ? "bg-blue-600 text-white" : "bg-blue-50 text-accent"
-              )}
-              title={isPromo ? "受商家委托的推广内容，已在独立推广池明示" : undefined}
-            >
-              {typeMeta?.label ?? postType}
-              {isPromo && merchantName ? ` · ${merchantName}` : ""}
-            </span>
+            {isPromo && merchant ? (
+              <Link
+                href={`/merchant/${merchant.id}`}
+                className="rounded bg-blue-600 px-1.5 py-0.5 text-xs font-medium text-white transition hover:bg-blue-700"
+                title="查看该商户主页（聚合全部推广与评价）"
+              >
+                {typeMeta?.label ?? postType} · {merchant.name}
+              </Link>
+            ) : (
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-xs font-medium",
+                  isAvoid ? "bg-red-50 text-red-600" : isPromo ? "bg-blue-600 text-white" : "bg-blue-50 text-accent"
+                )}
+                title={isPromo ? "受商家委托的推广内容，已在独立推广池明示" : undefined}
+              >
+                {typeMeta?.label ?? postType}
+                {isPromo && merchantName ? ` · ${merchantName}` : ""}
+              </span>
+            )}
+            {merchant && merchant.tier === "chain" && (
+              <Link
+                href={`/merchant/${merchant.id}`}
+                className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 transition hover:bg-amber-200"
+              >
+                品牌馆
+              </Link>
+            )}
+            {merchant && merchant.tier === "street" && (
+              <Link
+                href={`/merchant/${merchant.id}`}
+                className="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 transition hover:bg-emerald-100"
+              >
+                校园小店
+              </Link>
+            )}
             {status === "folded" && (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
                 <ShieldAlert className="h-3.5 w-3.5" />

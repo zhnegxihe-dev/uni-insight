@@ -149,3 +149,22 @@ export const OUTCOME_LABELS: Record<string, string> = {
   employment: "就业",
   civilService: "考公",
 };
+
+
+// 商户分类与层级（v4.7 §8.17 商户与生活推荐体系）
+export const MERCHANT_CATEGORIES = [
+  { key: "campus_food", label: "校园餐饮", hint: "食堂窗口 / 校门口小店 / 夜宵摊" },
+  { key: "city_food", label: "城市美食", hint: "餐厅 / 奶茶咖啡 / 连锁品牌" },
+  { key: "scenic", label: "小众景区", hint: "山 / 海 / 公园 / 古镇 / 露营地" },
+  { key: "leisure", label: "休闲去处", hint: "桌游 / 猫咖 / 书店自习 / 健身" },
+  { key: "life_service", label: "生活服务", hint: "打印店 / 驾校 / 理发等" },
+  { key: "edu_service", label: "学业服务", hint: "自习室 / 考研留学机构等" },
+] as const;
+export type MerchantCategory = (typeof MERCHANT_CATEGORIES)[number]["key"];
+
+export const MERCHANT_TIERS = [
+  { key: "street", label: "路边小店", hint: "个体小商贩 / 宝藏小店（免费认领）" },
+  { key: "chain", label: "品牌馆", hint: "认证大商家 / 连锁品牌（付费入驻）" },
+] as const;
+export type MerchantTier = (typeof MERCHANT_TIERS)[number]["key"];
+

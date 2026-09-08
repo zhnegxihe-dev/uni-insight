@@ -54,7 +54,8 @@ model School {
   teachers Teacher[]
   reviews  Review[]
   experiencePosts ExperiencePost[]
-  domains  SchoolEmailDomain[]
+  merchants      Merchant[]
+  domains        SchoolEmailDomain[]
 }
 
 model SchoolEmailDomain {
@@ -359,7 +360,9 @@ model ExperiencePost {
   majorId       String?
   courseId      String?
   teacherId     String?
-  merchantName  String? // 商家推广帖的商户名称（postType=promo 时必填）
+  merchantName  String? // 商家推广帖的商户名称（postType=promo 时必填；v4.7 起为冗余快照，结构关联以 merchantId 为准）
+  merchantId    String? // v4.7 §8.17：关联商户档案（promo 必填，服务端自动建档/校验；自发种草可选）
+  merchant      Merchant? @relation(fields: [merchantId], references: [id], onDelete: SetNull)
   images        String   @default("[]") // JSON: string[]（压缩后 data URL）
   sourceReplyId    String? // 由某条回复升级而来（回复→帖子），用于回源与防重复升级（v4.6 §8.16）
   sourceQuestionId String? // 来源回复所在问题（冗余存储，便于详情页回源展示）（v4.6 §8.16）
@@ -378,4 +381,30 @@ model ExperiencePost {
   @@index([postType, status])
   @@index([authorId, createdAt])
   @@unique([sourceReplyId, authorId]) // 同一作者对同一条回复最多升级/引用一次；不同作者可各自引用同一回复
+  @@index([merchantId])
+}
+// 商户档案（v4.7 §8.17：商户与生活推荐体系，替代 merchantName 字符串；迁移期兼容保留旧字段）
+model Merchant {
+  id          String   @id @default(cuid())
+  name        String
+  category    String   @default("campus_food") // campus_food | city_food | scenic | leisure | life_service | edu_service
+  tier        String   @default("street") // chain（认证大商家/品牌馆）| street（路边个体小商贩/宝藏小店）
+  claimStatus String   @default("unclaimed") // unclaimed | pending | claimed
+  ownerId     String? // 认领后绑定用户（Phase B 审核；读取时按主键反查，避免循环外键）
+  schoolId    String?
+  city        String?
+  address     String?
+  description String   @default("")
+  coverImages String   @default("[]") // JSON: string[]
+  creditScore Int      @default(0) // 商户信用分（Phase B 启用：买好评/打压差评/违规承诺扣分，红线清退）
+  status      String   @default("active") // active | suspended | removed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school School? @relation(fields: [schoolId], references: [id])
+  posts  ExperiencePost[]
+
+  @@index([schoolId, status])
+  @@index([category, status])
+  @@index([name])
 }

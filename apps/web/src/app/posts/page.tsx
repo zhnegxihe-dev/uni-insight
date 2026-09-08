@@ -34,6 +34,7 @@ export default async function PostsPage({
       author: { select: { nickname: true, verifiedSchools: true, level: true, trustScore: true } },
       school: { select: { id: true, name: true, slug: true } },
       major: { select: { id: true, name: true, slug: true } },
+      merchant: { select: { id: true, name: true, tier: true, category: true } },
     },
     take: 60,
   });
@@ -112,6 +113,7 @@ export default async function PostsPage({
               content={post.content}
               postType={post.postType}
               merchantName={post.merchantName}
+              merchant={post.merchant ?? null}
               images={JSON.parse(post.images) as string[]}
               likeCount={post.likeCount}
               favoriteCount={post.favoriteCount}

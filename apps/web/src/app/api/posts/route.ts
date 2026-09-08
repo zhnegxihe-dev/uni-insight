@@ -50,6 +50,7 @@ export async function GET(request: Request) {
       author: { select: { id: true, nickname: true, verifiedSchools: true, level: true } },
       school: { select: { id: true, name: true, slug: true } },
       major: { select: { id: true, name: true, slug: true } },
+      merchant: { select: { id: true, name: true, tier: true, category: true } },
     },
     take: 60,
   });
@@ -64,6 +65,7 @@ export async function GET(request: Request) {
       postType: post.postType,
       scenarioType: post.scenarioType,
       merchantName: post.merchantName,
+      merchant: post.merchant ?? null,
       images: JSON.parse(post.images) as string[],
       likeCount: post.likeCount,
       favoriteCount: post.favoriteCount,
@@ -92,6 +94,7 @@ export async function POST(request: Request) {
   const courseId = body.courseId ? String(body.courseId) : null;
   const teacherId = body.teacherId ? String(body.teacherId) : null;
   const merchantName = body.merchantName ? String(body.merchantName).trim().slice(0, 50) : null;
+  const merchantId = body.merchantId ? String(body.merchantId) : null;
   const images = validateImages(body.images);
   const sourceReplyId = body.sourceReplyId ? String(body.sourceReplyId) : null;
   const sourceQuestionId = body.sourceQuestionId ? String(body.sourceQuestionId) : null;
@@ -103,7 +106,7 @@ export async function POST(request: Request) {
   if (!POST_TYPES.some((p) => p.key === postType)) {
     return NextResponse.json({ error: "帖子类型不正确" }, { status: 400 });
   }
-  if (postType === "promo" && !merchantName) {
+  if (postType === "promo" && !merchantName && !merchantId) {
     return NextResponse.json({ error: "推广帖必须填写商户名称" }, { status: 400 });
   }
   if (scenarioType && !SCENARIOS.some((s) => s.type === scenarioType)) {
@@ -133,6 +136,30 @@ export async function POST(request: Request) {
   }
   if (teacherId && !(await prisma.teacher.findUnique({ where: { id: teacherId }, select: { id: true } }))) {
     return NextResponse.json({ error: "关联教师不存在" }, { status: 400 });
+  }
+
+  // —— 商户关联（v4.7 §8.17）：promo 帖必须关联商户；仅填名称时按名称查找或自动建档（street）——
+  let merchant: { id: string; name: string; tier: string; category: string } | null = null;
+  if (merchantId) {
+    const found = await prisma.merchant.findUnique({
+      where: { id: merchantId },
+      select: { id: true, name: true, tier: true, category: true, status: true },
+    });
+    if (!found || found.status !== "active") {
+      return NextResponse.json({ error: "商户不存在或不可用，请重新选择" }, { status: 400 });
+    }
+    merchant = found;
+  } else if (postType === "promo" && merchantName) {
+    merchant = await prisma.merchant.findFirst({
+      where: { name: merchantName, status: "active" },
+      select: { id: true, name: true, tier: true, category: true },
+    });
+    if (!merchant) {
+      merchant = await prisma.merchant.create({
+        data: { name: merchantName, category: "campus_food", tier: "street", schoolId },
+        select: { id: true, name: true, tier: true, category: true },
+      });
+    }
   }
 
   // —— 回复升级为帖子（蓝图 v4.6 §8.16）：仅允许升级自己可见的回复，同一条回复只能升级一次 ——
@@ -181,7 +208,8 @@ export async function POST(request: Request) {
       majorId,
       courseId,
       teacherId,
-      merchantName,
+      merchantName: merchant ? merchant.name : merchantName,
+      merchantId: merchant?.id ?? null,
       images: JSON.stringify(images.images),
       sourceReplyId: sourceReply?.id ?? null,
       sourceQuestionId: sourceReply?.questionId ?? (sourceQuestionId || null),
