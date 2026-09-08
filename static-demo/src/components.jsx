@@ -315,6 +315,7 @@ export function ExperiencePostCard({ post }) {
   const typeMeta = db.POST_TYPES.find((p) => p.key === post.postType);
   const isAvoid = post.postType === "avoid";
   const isPromo = post.postType === "promo";
+  const merchant = db.merchantOf(state, post);
   let images = [];
   try { images = JSON.parse(post.images || "[]"); } catch { images = []; }
   const cover = images[0];
@@ -325,10 +326,22 @@ export function ExperiencePostCard({ post }) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex items-center gap-2">
-            <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${isAvoid ? "bg-red-50 text-red-600" : isPromo ? "bg-blue-600 text-white" : "bg-blue-50 text-accent"}`}>
-              {typeMeta?.label ?? post.postType}
-              {isPromo && post.merchantName ? ` · ${post.merchantName}` : ""}
-            </span>
+            {isPromo && merchant ? (
+              <Link to={`/merchant/${merchant.id}`} className="rounded bg-blue-600 px-1.5 py-0.5 text-xs font-medium text-white transition hover:bg-blue-700" title="查看该商户主页（聚合全部推广与评价）">
+                {typeMeta?.label ?? post.postType} · {merchant.name}
+              </Link>
+            ) : (
+              <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${isAvoid ? "bg-red-50 text-red-600" : isPromo ? "bg-blue-600 text-white" : "bg-blue-50 text-accent"}`}>
+                {typeMeta?.label ?? post.postType}
+                {isPromo && post.merchantName ? ` · ${post.merchantName}` : ""}
+              </span>
+            )}
+            {merchant && merchant.tier === "chain" && (
+              <Link to={`/merchant/${merchant.id}`} className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 transition hover:bg-amber-200">品牌馆</Link>
+            )}
+            {merchant && merchant.tier === "street" && (
+              <Link to={`/merchant/${merchant.id}`} className="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 transition hover:bg-emerald-100">校园小店</Link>
+            )}
             {post.status === "folded" && (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
                 <ShieldAlert className="h-3.5 w-3.5" />已折叠

@@ -1437,7 +1437,8 @@
       "likeCount": 3,
       "favoriteCount": 1,
       "status": "visible",
-      "createdAt": "2026-08-28T10:00:00.000Z"
+      "createdAt": "2026-08-28T10:00:00.000Z",
+      "merchantId": "m_sx_food"
     },
     {
       "id": "p_mtbmohzmpcrj0k",
@@ -1506,6 +1507,85 @@
       "favoriteCount": 3,
       "status": "visible",
       "createdAt": "2026-08-26T02:00:00.000Z"
+    },
+    {
+      "id": "p_mch_ydian",
+      "authorId": "cmt8r03si0009n9qk48vtf0l9",
+      "title": "一点点大学城店：复习周续命奶茶，周三凭学生证第二杯半价",
+      "content": "大学城 GOGO 新天地这家人流量最大的奶茶店，波霸奶茶和四季春玛奇朵点单率最高。复习周晚上 9 点后基本不用排队，出杯快。\n\n（本条为品牌委托推广，已明示标注）",
+      "postType": "promo",
+      "scenarioType": null,
+      "schoolId": "cmt8r04nn000an9qk86ycs8iq",
+      "majorId": null,
+      "courseId": null,
+      "teacherId": null,
+      "merchantName": "一点点（大学城店）",
+      "merchantId": "m_ydian",
+      "images": "[]",
+      "likeCount": 2,
+      "favoriteCount": 2,
+      "status": "visible",
+      "createdAt": "2026-09-02T06:00:00.000Z"
+    },
+    {
+      "id": "p_mch_dafu",
+      "authorId": "cmt8r03si0009n9qk48vtf0l9",
+      "title": "周末半日游推荐：大夫山骑行，免费又出片",
+      "content": "不想在宿舍躺平的周末，可以坐地铁到大夫山。南门进租辆单车 15 块骑到北门，沿途湖景和杉树林很出片，全程 2-3 小时，适合约上室友野餐。记得自带水和防蚊。\n\n（本条为景区委托推广，已明示标注）",
+      "postType": "promo",
+      "scenarioType": null,
+      "schoolId": null,
+      "majorId": null,
+      "courseId": null,
+      "teacherId": null,
+      "merchantName": "大夫山森林公园",
+      "merchantId": "m_dafu",
+      "images": "[]",
+      "likeCount": 4,
+      "favoriteCount": 3,
+      "status": "visible",
+      "createdAt": "2026-09-05T03:30:00.000Z"
+    }
+  ],
+  "merchants": [
+    {
+      "id": "m_sx_food",
+      "name": "南门沙县小吃",
+      "category": "campus_food",
+      "tier": "street",
+      "claimStatus": "unclaimed",
+      "schoolId": "cmt8r04nn000an9qk86ycs8iq",
+      "city": "广州",
+      "address": "中大南门巷子口往里 50 米",
+      "description": "学长学姐晚自习后的快乐老家，拌面蒸饺量大实惠，学生党常客。店主尚未认领，认领功能开放后可认领主页。",
+      "status": "active",
+      "createdAt": "2026-08-28T09:00:00.000Z"
+    },
+    {
+      "id": "m_ydian",
+      "name": "一点点（大学城店）",
+      "category": "city_food",
+      "tier": "chain",
+      "claimStatus": "claimed",
+      "schoolId": "cmt8r04nn000an9qk86ycs8iq",
+      "city": "广州",
+      "address": "大学城 GOGO 新天地一层",
+      "description": "连锁茶饮品牌馆（演示已认领）。学生凭学生证每周三第二杯半价。",
+      "status": "active",
+      "createdAt": "2026-09-02T05:00:00.000Z"
+    },
+    {
+      "id": "m_dafu",
+      "name": "大夫山森林公园",
+      "category": "scenic",
+      "tier": "street",
+      "claimStatus": "unclaimed",
+      "schoolId": null,
+      "city": "广州",
+      "address": "番禺区禺山西路",
+      "description": "广州近郊骑行/野餐好去处，南门进可租单车，适合周末半日游。门票免费。",
+      "status": "active",
+      "createdAt": "2026-09-05T03:00:00.000Z"
     }
   ]
 }

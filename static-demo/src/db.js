@@ -18,6 +18,21 @@ export const POST_TYPES = [
   { key: "promo", label: "推广帖", hint: "受商家委托的推荐，明示标注（独立推广池）" },
 ];
 
+export const MERCHANT_CATEGORIES = [
+  { key: "campus_food", label: "校园餐饮", hint: "食堂窗口 / 校门口小店 / 夜宵摊" },
+  { key: "city_food", label: "城市美食", hint: "餐厅 / 奶茶咖啡 / 连锁品牌" },
+  { key: "scenic", label: "小众景区", hint: "山 / 海 / 公园 / 古镇 / 露营地" },
+  { key: "leisure", label: "休闲去处", hint: "桌游 / 猫咖 / 书店自习 / 健身" },
+  { key: "life_service", label: "生活服务", hint: "打印店 / 驾校 / 理发等" },
+  { key: "edu_service", label: "学业服务", hint: "自习室 / 考研留学机构等" },
+];
+
+export const MERCHANT_TIERS = [
+  { key: "street", label: "路边小店", hint: "个体小商贩 / 宝藏小店（免费认领）" },
+  { key: "chain", label: "品牌馆", hint: "认证大商家 / 连锁品牌（付费入驻）" },
+];
+
+
 export const SCENARIO_LABEL = {
   gaokao: "高考志愿",
   transfer: "转专业",
@@ -99,6 +114,7 @@ function initState() {
     aiSummaries: seed.aiSummaries.map((a) => ({ ...a })),
     aiPosts: seed.aiPosts.map((p) => ({ ...p })),
     experiencePosts: seed.experiencePosts ? seed.experiencePosts.map((p) => ({ ...p })) : [],
+    merchants: seed.merchants ? seed.merchants.map((m) => ({ ...m })) : [],
     myStars: [],
     myFavorites: [],
     follows: [],
@@ -120,6 +136,7 @@ export function loadState() {
           parsed.experiencePosts = seed.experiencePosts ? seed.experiencePosts.map((p) => ({ ...p })) : [];
         }
         if (!Array.isArray(parsed.myFavorites)) parsed.myFavorites = [];
+        if (!Array.isArray(parsed.merchants)) parsed.merchants = seed.merchants ? seed.merchants.map((m) => ({ ...m })) : [];
         for (const u of parsed.users) if (typeof u.trustScore !== "number") u.trustScore = 0;
         for (const x of parsed.experiencePosts) if (!("merchantName" in x)) x.merchantName = null;
         for (const q of parsed.questions) if (typeof q.favoriteCount !== "number") q.favoriteCount = 0;
@@ -135,6 +152,7 @@ export function loadState() {
         for (const x of parsed.experiencePosts) {
           if (!("sourceReplyId" in x)) x.sourceReplyId = null;
           if (!("sourceQuestionId" in x)) x.sourceQuestionId = null;
+          if (!("merchantId" in x)) x.merchantId = null;
         }
 
         saveState(parsed);
@@ -412,13 +430,13 @@ export function getExperiencePost(state, id) {
   };
 }
 
-export function createExperiencePost(state, { title, content, postType, scenarioType, schoolId, majorId, courseId, teacherId, images, merchantName, mode, sourceReplyId, sourceQuestionId }) {
+export function createExperiencePost(state, { title, content, postType, scenarioType, schoolId, majorId, courseId, teacherId, images, merchantId, merchantName, mode, sourceReplyId, sourceQuestionId }) {
   const user = getCurrentUser(state);
   if (!user) throw new Error("请先登录");
   if (!title) throw new Error("请填写标题");
   if (!content) throw new Error("请填写正文");
   if (!["experience", "avoid", "promo"].includes(postType)) throw new Error("帖子类型不正确");
-  if (postType === "promo" && !merchantName) throw new Error("推广帖必须填写商户名称");
+  if (postType === "promo" && !merchantId && !merchantName) throw new Error("推广帖必须选择或填写商户");
   if (/微信|qq|vx|手机号|电话|保录取|代写|收款|扫码|加我|联系我|http|转账/i.test(title + content)) {
     throw new Error("内容疑似广告/中介，请移除联系方式或营销信息");
   }
@@ -438,6 +456,18 @@ export function createExperiencePost(state, { title, content, postType, scenario
       if (ownPart.length < 10) throw new Error("引用发帖需在原回复基础上补充至少 10 字自己的内容");
     }
   }
+  // —— 商户关联（v4.7 §8.17）：promo 帖必须关联商户；仅填名称时按名查找或自动建档 ——
+  let merchant = null;
+  if (postType === "promo") {
+    if (merchantId) {
+      merchant = state.merchants.find((m) => m.id === merchantId) ?? null;
+      if (!merchant || merchant.status === "removed") throw new Error("商户不存在或不可用，请重新选择");
+    } else if (merchantName) {
+      merchant = state.merchants.find((m) => m.name === merchantName && m.status !== "removed") ?? createMerchant(state, { name: merchantName, schoolId: schoolId || null });
+    }
+  }
+
+
   const post = {
     id: uid("p"),
     authorId: user.id,
@@ -449,7 +479,8 @@ export function createExperiencePost(state, { title, content, postType, scenario
     majorId: majorId || null,
     courseId: courseId || null,
     teacherId: teacherId || null,
-    merchantName: postType === "promo" ? merchantName : null,
+    merchantName: postType === "promo" ? (merchant ? merchant.name : merchantName) : null,
+    merchantId: postType === "promo" ? (merchant ? merchant.id : merchantId) : null,
     images: JSON.stringify(images || []),
     sourceReplyId: srcReply ? srcReply.id : null,
     sourceQuestionId: srcReply ? srcReply.questionId : (sourceQuestionId || null),
@@ -470,6 +501,51 @@ export function createExperiencePost(state, { title, content, postType, scenario
   saveState(state);
   return post;
 }
+
+/* ---------- 商户（v4.7 §8.17 商户与生活推荐体系） ---------- */
+export function listMerchants(state, { q = "", category = "" } = {}) {
+  let list = state.merchants.filter((m) => m.status !== "removed");
+  if (category) list = list.filter((m) => m.category === category);
+  if (q) {
+    const kw = q.toLowerCase();
+    list = list.filter((m) => m.name.toLowerCase().includes(kw));
+  }
+  return list.map((m) => ({
+    ...m,
+    postCount: state.experiencePosts.filter((x) => x.status !== "hidden" && (x.merchantId === m.id || (x.merchantName && x.merchantName === m.name))).length,
+  }));
+}
+
+export function getMerchant(state, id) {
+  const merchant = state.merchants.find((m) => m.id === id);
+  if (!merchant || merchant.status === "removed") return null;
+  const posts = state.experiencePosts
+    .filter((x) => x.status !== "hidden" && (x.merchantId === id || (x.merchantName && x.merchantName === merchant.name)))
+    .sort((a, b) => hotScorePost(b) - hotScorePost(a));
+  return { merchant, posts };
+}
+
+export function merchantOf(state, post) {
+  if (!post) return null;
+  if (post.merchantId) return state.merchants.find((m) => m.id === post.merchantId) ?? null;
+  if (post.merchantName) return state.merchants.find((m) => m.name === post.merchantName) ?? null;
+  return null;
+}
+
+export function createMerchant(state, { name, category = "campus_food", tier = "street", schoolId = null, city = "", address = "", description = "" }) {
+  const user = getCurrentUser(state);
+  if (!user) throw new Error("请先登录");
+  const n = String(name || "").trim().slice(0, 80);
+  if (!n) throw new Error("请填写商户名称");
+  if (!MERCHANT_CATEGORIES.some((x) => x.key === category)) throw new Error("商户分类不正确");
+  const existing = state.merchants.find((m) => m.name === n && m.status !== "removed");
+  if (existing) return existing;
+  const merchant = { id: uid("m"), name: n, category, tier: tier === "chain" ? "chain" : "street", claimStatus: "unclaimed", schoolId: schoolId || null, city: (city || "").trim().slice(0, 50) || null, address: (address || "").trim().slice(0, 200) || null, description: (description || "").trim().slice(0, 500) || "", creditScore: 0, status: "active", createdAt: new Date().toISOString() };
+  state.merchants.push(merchant);
+  saveState(state);
+  return merchant;
+}
+
 
 /* ---------- star ---------- */
 export function toggleStar(state, targetType, targetId) {

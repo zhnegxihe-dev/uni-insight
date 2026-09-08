@@ -21,6 +21,7 @@ import Levels from "./pages/Levels";
 import Posts from "./pages/Posts";
 import PostNew from "./pages/PostNew";
 import PostDetail from "./pages/PostDetail";
+import Merchant from "./pages/Merchant";
 import Schools from "./pages/Schools";
 
 function Header() {
@@ -154,6 +155,7 @@ export default function App() {
           <Route path="/posts" element={<Posts />} />
           <Route path="/posts/new" element={<PostNew />} />
           <Route path="/posts/:id" element={<PostDetail />} />
+          <Route path="/merchant/:id" element={<Merchant />} />
           <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
