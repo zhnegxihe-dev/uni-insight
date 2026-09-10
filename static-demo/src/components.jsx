@@ -571,3 +571,103 @@ export function MerchantCard({ merchant, rating, postCount }) {
     </Link>
   );
 }
+
+/* ---------- 商户咨询 / 线索 / 套餐（v4.7 Phase D） ---------- */
+export function MerchantContactButton({ merchantId, sourcePostId }) {
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [contact, setContact] = useState("");
+  const [error, setError] = useState("");
+  const [done, setDone] = useState("");
+
+  function submit(e) {
+    e.preventDefault();
+    setError("");
+    try {
+      act(db.createLead, merchantId, { message, contact, sourcePostId: sourcePostId || null });
+      setDone("已提交，商家会尽快联系你（平台担保成交，佣金仅在实际成交后结算）");
+      setOpen(false);
+      setMessage("");
+      setContact("");
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  if (done) return <p className="text-xs text-emerald-600">{done}</p>;
+  if (!open) {
+    return <button type="button" onClick={() => setOpen(true)} className="btn-primary whitespace-nowrap"><MessageSquare className="h-4 w-4" />咨询 / 报名</button>;
+  }
+  return (
+    <form onSubmit={submit} className="card w-full space-y-2 p-4 text-left">
+      <p className="text-sm font-medium text-ink">向商家咨询 / 报名</p>
+      <textarea className="input min-h-20" value={message} onChange={(e) => setMessage(e.target.value.slice(0, 500))} placeholder="想了解什么？例如：营业时间、班型与价格、预约方式…" />
+      <input className="input" value={contact} onChange={(e) => setContact(e.target.value.slice(0, 100))} placeholder="联系方式（微信/手机号，仅商家可见）" />
+      {error && <p className="text-xs text-red-500">{error}</p>}
+      <div className="flex justify-end gap-2">
+        <button type="button" onClick={() => setOpen(false)} className="btn-ghost">取消</button>
+        <button type="submit" className="btn-primary">提交咨询</button>
+      </div>
+    </form>
+  );
+}
+
+export function LeadStatusActions({ merchantId, leadId, status }) {
+  const [amount, setAmount] = useState("");
+  const [error, setError] = useState("");
+
+  function update(next) {
+    setError("");
+    try {
+      act(db.updateLeadStatus, merchantId, leadId, next, Number(amount) || 0);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  if (status === "deal") return <span className="text-xs text-emerald-600">已成交</span>;
+  if (status === "cancelled") return <span className="text-xs text-zinc-400">已取消</span>;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button type="button" onClick={() => update("contacted")} className="rounded-md border border-line px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-50">标记已联系</button>
+      <input className="input h-8 w-20 py-0 text-xs" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="金额(元)" />
+      <button type="button" onClick={() => update("deal")} className="rounded-md bg-accent px-2 py-1 text-xs text-white hover:bg-blue-700">成交并结算</button>
+      <button type="button" onClick={() => update("cancelled")} className="text-xs text-zinc-400 hover:text-zinc-600">取消</button>
+      {error && <span className="text-xs text-red-500">{error}</span>}
+    </div>
+  );
+}
+
+export function PlanPicker({ merchantId, currentPlan }) {
+  const [error, setError] = useState("");
+
+  function choose(plan) {
+    setError("");
+    try {
+      act(db.subscribePlan, merchantId, plan);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-3">
+        {db.MERCHANT_PLANS.map((p) => (
+          <div key={p.key} className={"card flex flex-col p-5 " + (currentPlan === p.key ? "border-accent ring-1 ring-accent" : "")}>
+            <p className="text-sm font-semibold text-ink">{p.label}</p>
+            <p className="mt-2 text-2xl font-semibold text-ink">{p.price === 0 ? "免费" : "¥" + (p.price / 100).toFixed(0)}{p.period ? <span className="text-xs font-normal text-zinc-400"> / {p.period}</span> : null}</p>
+            <ul className="mt-3 flex-1 space-y-1.5 text-xs text-zinc-600">
+              {p.perks.map((x) => <li key={x}>· {x}</li>)}
+            </ul>
+            <button type="button" onClick={() => choose(p.key)} disabled={currentPlan === p.key} className={"mt-4 rounded-md px-3 py-2 text-sm disabled:opacity-50 " + (currentPlan === p.key ? "bg-zinc-100 text-zinc-500" : "btn-primary")}>
+              {currentPlan === p.key ? "当前套餐" : p.price === 0 ? "切换到免费版" : "选择该套餐"}
+            </button>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-zinc-400">演示环境未接入支付：选择套餐后直接开通 365 天。</p>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}

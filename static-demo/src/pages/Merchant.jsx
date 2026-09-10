@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { BadgeCheck, MapPin, Plus, Star, Store } from "lucide-react";
+import { BadgeCheck, Crown, MapPin, Plus, Star, Store } from "lucide-react";
 import { useDb, act } from "../store";
 import * as db from "../db";
-import { ExperiencePostCard, VerifiedBadge } from "../components";
+import { ExperiencePostCard, MerchantContactButton, VerifiedBadge } from "../components";
 
 function Stars({ value, size = "h-4 w-4" }) {
   return (
@@ -90,6 +90,9 @@ export default function Merchant() {
               {merchant.claimStatus === "claimed" && (
                 <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-accent"><BadgeCheck className="h-3 w-3" />已认领</span>
               )}
+              {merchant.plan && merchant.plan !== "free" && (
+                <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700"><Crown className="h-3 w-3" />品牌馆</span>
+              )}
             </div>
             {(school || merchant.city || merchant.address) && (
               <p className="mt-2 inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
@@ -99,9 +102,12 @@ export default function Merchant() {
               </p>
             )}
           </div>
-          {user && (
-            <Link to="/posts/new" className="btn-primary whitespace-nowrap"><Plus className="h-4 w-4" />为该商户发推广帖</Link>
-          )}
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <MerchantContactButton merchantId={merchant.id} />
+            {user && (
+              <Link to="/posts/new" className="btn-ghost whitespace-nowrap"><Plus className="h-4 w-4" />为该商户发推广帖</Link>
+            )}
+          </div>
         </div>
 
         {merchant.description && <p className="text-sm leading-relaxed text-zinc-600">{merchant.description}</p>}
@@ -110,6 +116,7 @@ export default function Merchant() {
           <span>{posts.length} 条关联帖子</span>
           <span>{stats.reviewCount} 条评价</span>
           {owner && <span>主理人：{owner.nickname}</span>}
+          {canReply && <Link to={`/merchant/${merchant.id}/dashboard`} className="font-medium text-accent hover:underline">商户后台</Link>}
           {merchant.claimStatus === "unclaimed" && user && (
             <span>
               <button

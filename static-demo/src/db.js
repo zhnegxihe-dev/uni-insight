@@ -76,6 +76,15 @@ export const MERCHANT_REVIEW_DIMS = {
 export const MERCHANT_MIN_REVIEWS = 5;
 export const MERCHANT_MIN_ACCOUNT_AGE_DAYS = 3;
 
+// 品牌馆套餐与佣金（v4.7 Phase D）
+export const MERCHANT_PLANS = [
+  { key: "free", label: "免费版", price: 0, period: "", perks: ["基础商户主页", "推广帖发布", "评价与回复"] },
+  { key: "brand_basic", label: "品牌馆 · 基础", price: 29900, period: "年", perks: ["品牌馆认证标识", "推广帖优先排序", "官方活动位", "数据后台"] },
+  { key: "brand_pro", label: "品牌馆 · 专业", price: 99900, period: "年", perks: ["基础版全部权益", "首页曝光位", "线索 CRM 与成交看板", "佣金结算对账"] },
+];
+export const PLATFORM_COMMISSION_RATE = 0.1;
+export const PROMOTER_COMMISSION_RATE = 0.05;
+
 
 export const SCENARIO_LABEL = {
   gaokao: "高考志愿",
@@ -160,6 +169,8 @@ function initState() {
     experiencePosts: seed.experiencePosts ? seed.experiencePosts.map((p) => ({ ...p })) : [],
     merchants: seed.merchants ? seed.merchants.map((m) => ({ ...m })) : [],
     merchantReviews: seed.merchantReviews ? seed.merchantReviews.map((r) => ({ ...r })) : [],
+    merchantLeads: seed.merchantLeads ? seed.merchantLeads.map((l) => ({ ...l })) : [],
+    merchantCommissions: seed.merchantCommissions ? seed.merchantCommissions.map((x) => ({ ...x })) : [],
     myStars: [],
     myFavorites: [],
     follows: [],
@@ -183,6 +194,8 @@ export function loadState() {
         if (!Array.isArray(parsed.myFavorites)) parsed.myFavorites = [];
         if (!Array.isArray(parsed.merchants)) parsed.merchants = seed.merchants ? seed.merchants.map((m) => ({ ...m })) : [];
         if (!Array.isArray(parsed.merchantReviews)) parsed.merchantReviews = seed.merchantReviews ? seed.merchantReviews.map((r) => ({ ...r })) : [];
+        if (!Array.isArray(parsed.merchantLeads)) parsed.merchantLeads = seed.merchantLeads ? seed.merchantLeads.map((l) => ({ ...l })) : [];
+        if (!Array.isArray(parsed.merchantCommissions)) parsed.merchantCommissions = seed.merchantCommissions ? seed.merchantCommissions.map((x) => ({ ...x })) : [];
         for (const u of parsed.users) if (typeof u.trustScore !== "number") u.trustScore = 0;
         for (const x of parsed.experiencePosts) if (!("merchantName" in x)) x.merchantName = null;
         for (const q of parsed.questions) if (typeof q.favoriteCount !== "number") q.favoriteCount = 0;
@@ -726,6 +739,81 @@ export function claimMerchant(state, merchantId) {
   merchant.ownerId = user.id;
   saveState(state);
   return merchant;
+}
+
+/* ---------- 商户线索 / 成交 / 套餐（v4.7 Phase D） ---------- */
+export function createLead(state, merchantId, { message = "", contact = "", sourcePostId = null } = {}) {
+  const merchant = state.merchants.find((m) => m.id === merchantId && m.status !== "removed");
+  if (!merchant) throw new Error("商户不存在或不可用");
+  const msg = String(message || "").trim().slice(0, 500);
+  const ctt = String(contact || "").trim().slice(0, 100);
+  if (!msg && !ctt) throw new Error("请填写留言或联系方式");
+  const user = getCurrentUser(state);
+  let sourcePostAuthorId = null;
+  if (sourcePostId) {
+    const post = state.experiencePosts.find((x) => x.id === sourcePostId && x.merchantId === merchantId && x.status !== "hidden");
+    if (post) sourcePostAuthorId = post.authorId;
+  }
+  const lead = { id: uid("lead"), merchantId, userId: user ? user.id : null, sourcePostId: sourcePostId || null, sourcePostAuthorId, contact: ctt || null, message: msg || null, status: "new", dealAmount: null, dealAt: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  state.merchantLeads.push(lead);
+  saveState(state);
+  return lead;
+}
+
+export function updateLeadStatus(state, merchantId, leadId, status, dealAmountYuan = 0) {
+  const user = getCurrentUser(state);
+  if (!user) throw new Error("请先登录");
+  const merchant = state.merchants.find((m) => m.id === merchantId);
+  if (!merchant) throw new Error("商户不存在");
+  if (merchant.ownerId !== user.id && (user.role || "user") !== "admin") throw new Error("只有商户主理人可管理线索");
+  const lead = state.merchantLeads.find((l) => l.id === leadId && l.merchantId === merchantId);
+  if (!lead) throw new Error("线索不存在");
+  if (!["new", "contacted", "deal", "cancelled"].includes(status)) throw new Error("线索状态不正确");
+  lead.status = status;
+  if (status === "deal") {
+    const cents = Math.max(0, Math.round(Number(dealAmountYuan) * 100));
+    if (!cents) throw new Error("请填写成交金额（元）");
+    lead.dealAmount = cents;
+    lead.dealAt = new Date().toISOString();
+    if (!state.merchantCommissions.some((c) => c.leadId === leadId)) {
+      state.merchantCommissions.push({ id: uid("cm"), merchantId, leadId, beneficiaryId: null, kind: "platform", amount: Math.round(cents * PLATFORM_COMMISSION_RATE), baseAmount: cents, rate: PLATFORM_COMMISSION_RATE, status: "pending", createdAt: new Date().toISOString() });
+      if (lead.sourcePostAuthorId && lead.sourcePostAuthorId !== merchant.ownerId) {
+        state.merchantCommissions.push({ id: uid("cm"), merchantId, leadId, beneficiaryId: lead.sourcePostAuthorId, kind: "promoter", amount: Math.round(cents * PROMOTER_COMMISSION_RATE), baseAmount: cents, rate: PROMOTER_COMMISSION_RATE, status: "pending", createdAt: new Date().toISOString() });
+      }
+    }
+  } else {
+    lead.dealAmount = null;
+    lead.dealAt = null;
+  }
+  lead.updatedAt = new Date().toISOString();
+  saveState(state);
+  return lead;
+}
+
+export function subscribePlan(state, merchantId, plan) {
+  const user = getCurrentUser(state);
+  if (!user) throw new Error("请先登录");
+  const merchant = state.merchants.find((m) => m.id === merchantId);
+  if (!merchant) throw new Error("商户不存在");
+  if (merchant.ownerId !== user.id && (user.role || "user") !== "admin") throw new Error("只有商户主理人可升级套餐");
+  if (!MERCHANT_PLANS.some((p) => p.key === plan)) throw new Error("套餐不正确");
+  merchant.plan = plan;
+  if (plan === "free") { merchant.planExpiresAt = null; }
+  else { merchant.planExpiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(); merchant.tier = "chain"; }
+  saveState(state);
+  return merchant;
+}
+
+export function getMerchantDashboard(state, merchantId) {
+  const merchant = state.merchants.find((m) => m.id === merchantId);
+  if (!merchant) return null;
+  const leads = state.merchantLeads.filter((l) => l.merchantId === merchantId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const commissions = state.merchantCommissions.filter((c) => c.merchantId === merchantId);
+  const deals = leads.filter((l) => l.status === "deal");
+  const revenue = deals.reduce((s, l) => s + (l.dealAmount || 0), 0);
+  const platformFee = commissions.filter((c) => c.kind === "platform").reduce((s, c) => s + c.amount, 0);
+  const promoterFee = commissions.filter((c) => c.kind === "promoter").reduce((s, c) => s + c.amount, 0);
+  return { merchant, leads, commissions, stats: { leadCount: leads.length, newCount: leads.filter((l) => l.status === "new").length, dealCount: deals.length, revenue, platformFee, promoterFee } };
 }
 
 /* ---------- star ---------- */

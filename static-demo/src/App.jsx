@@ -22,6 +22,8 @@ import Posts from "./pages/Posts";
 import PostNew from "./pages/PostNew";
 import PostDetail from "./pages/PostDetail";
 import Merchant from "./pages/Merchant";
+import MerchantDashboard from "./pages/MerchantDashboard";
+import MerchantUpgrade from "./pages/MerchantUpgrade";
 import Schools from "./pages/Schools";
 import Places from "./pages/Places";
 
@@ -159,6 +161,8 @@ export default function App() {
           <Route path="/posts/new" element={<PostNew />} />
           <Route path="/posts/:id" element={<PostDetail />} />
           <Route path="/merchant/:id" element={<Merchant />} />
+          <Route path="/merchant/:id/dashboard" element={<MerchantDashboard />} />
+          <Route path="/merchant/:id/upgrade" element={<MerchantUpgrade />} />
           <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

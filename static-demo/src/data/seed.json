@@ -1595,7 +1595,9 @@
       "status": "active",
       "createdAt": "2026-09-02T05:00:00.000Z",
       "ownerId": "cmt8r035w0001n9qk5q0epo44",
-      "creditScore": 100
+      "creditScore": 100,
+      "plan": "brand_basic",
+      "planExpiresAt": "2027-09-10T10:43:48.751Z"
     },
     {
       "id": "m_dafu",
@@ -1811,6 +1813,76 @@
       "merchantRepliedAt": null,
       "status": "visible",
       "createdAt": "2026-09-08T03:30:00.000Z"
+    }
+  ],
+  "merchantLeads": [
+    {
+      "id": "lead_1",
+      "merchantId": "m_ydian",
+      "userId": "cmt8r03600002n9qk0jl8a7wm",
+      "sourcePostId": null,
+      "sourcePostAuthorId": null,
+      "contact": "微信 fin_student",
+      "message": "想问下社团活动包场怎么收费？大概 30 人。",
+      "status": "new",
+      "dealAmount": null,
+      "dealAt": null,
+      "createdAt": "2026-09-09T08:00:00.000Z",
+      "updatedAt": "2026-09-09T08:00:00.000Z"
+    },
+    {
+      "id": "lead_2",
+      "merchantId": "m_ydian",
+      "userId": "cmt8r037s0005n9qk1au7139e",
+      "sourcePostId": "p_mch_ydian",
+      "sourcePostAuthorId": "cmt8r03si0009n9qk48vtf0l9",
+      "contact": "138****2233",
+      "message": "看到学姐的推广，想订 50 杯做班级活动，可以开发票吗？",
+      "status": "deal",
+      "dealAmount": 120000,
+      "dealAt": "2026-09-10T02:00:00.000Z",
+      "createdAt": "2026-09-09T09:00:00.000Z",
+      "updatedAt": "2026-09-10T02:00:00.000Z"
+    },
+    {
+      "id": "lead_3",
+      "merchantId": "m_ydian",
+      "userId": "cmt8r035w0001n9qk5q0epo44",
+      "sourcePostId": null,
+      "sourcePostAuthorId": null,
+      "contact": null,
+      "message": "之前问的新品合作，先搁置了。",
+      "status": "cancelled",
+      "dealAmount": null,
+      "dealAt": null,
+      "createdAt": "2026-09-08T06:00:00.000Z",
+      "updatedAt": "2026-09-09T06:00:00.000Z"
+    }
+  ],
+  "merchantCommissions": [
+    {
+      "id": "cm_1",
+      "merchantId": "m_ydian",
+      "leadId": "lead_2",
+      "beneficiaryId": null,
+      "kind": "platform",
+      "amount": 12000,
+      "baseAmount": 120000,
+      "rate": 0.1,
+      "status": "pending",
+      "createdAt": "2026-09-10T02:00:00.000Z"
+    },
+    {
+      "id": "cm_2",
+      "merchantId": "m_ydian",
+      "leadId": "lead_2",
+      "beneficiaryId": "cmt8r03si0009n9qk48vtf0l9",
+      "kind": "promoter",
+      "amount": 6000,
+      "baseAmount": 120000,
+      "rate": 0.05,
+      "status": "pending",
+      "createdAt": "2026-09-10T02:00:00.000Z"
     }
   ]
 }
