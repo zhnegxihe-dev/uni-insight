@@ -168,3 +168,45 @@ export const MERCHANT_TIERS = [
 ] as const;
 export type MerchantTier = (typeof MERCHANT_TIERS)[number]["key"];
 
+// 商户评价维度（v4.7 §8.17 Phase B：按品类定制，评分 1-5）
+export const MERCHANT_REVIEW_DIMS: Record<string, { key: string; label: string }[]> = {
+  campus_food: [
+    { key: "taste", label: "口味" },
+    { key: "env", label: "环境" },
+    { key: "service", label: "服务" },
+    { key: "value", label: "性价比" },
+  ],
+  city_food: [
+    { key: "taste", label: "口味" },
+    { key: "env", label: "环境" },
+    { key: "service", label: "服务" },
+    { key: "value", label: "性价比" },
+  ],
+  scenic: [
+    { key: "view", label: "风景" },
+    { key: "traffic", label: "交通便利" },
+    { key: "crowd", label: "人流" },
+    { key: "value", label: "性价比" },
+  ],
+  leisure: [
+    { key: "experience", label: "体验" },
+    { key: "env", label: "环境" },
+    { key: "value", label: "性价比" },
+    { key: "suit", label: "适合度" },
+  ],
+  life_service: [
+    { key: "professional", label: "专业" },
+    { key: "service", label: "服务" },
+    { key: "value", label: "性价比" },
+  ],
+  edu_service: [
+    { key: "professional", label: "专业性" },
+    { key: "transparency", label: "信息透明度" },
+    { key: "service", label: "服务态度" },
+    { key: "value", label: "性价比" },
+    { key: "result", label: "结果真实性" },
+  ],
+};
+
+// 评价数不足该值时不展示星级（防小样本误导）
+export const MERCHANT_MIN_REVIEWS = 5;

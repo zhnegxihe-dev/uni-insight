@@ -39,6 +39,7 @@ model User {
   conversationsA Conversation[] @relation("convA")
   conversationsB Conversation[] @relation("convB")
   messages      Message[]
+  merchantReviews MerchantReview[]
 }
 
 model School {
@@ -403,8 +404,32 @@ model Merchant {
 
   school School? @relation(fields: [schoolId], references: [id])
   posts  ExperiencePost[]
+  reviews MerchantReview[]
 
   @@index([schoolId, status])
   @@index([category, status])
   @@index([name])
+}
+
+// 商户评价（v4.7 §8.17 Phase B：真实消费/使用后发表；评分只来自本表，付费推广不计入）
+model MerchantReview {
+  id            String   @id @default(cuid())
+  merchantId    String
+  authorId      String
+  rating        Int      // 1..5 综合评分
+  dims          String   @default("{}") // JSON: {维度key: 1..5}，品类维度见 lib/core.ts
+  content       String   // <=2000
+  isAnonymous   Boolean  @default(false) // 匿名/脱敏展示（差评保护）
+  merchantReply String?  // 商户主理人回复
+  merchantRepliedAt DateTime?
+  status        String   @default("visible") // visible | folded | hidden
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id])
+
+  @@unique([merchantId, authorId]) // 同商户同用户仅一条评价（可扩展为主评价 + 追评）
+  @@index([merchantId, status])
+  @@index([authorId])
 }

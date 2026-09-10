@@ -1,53 +1,15 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { hotScorePost } from "@/lib/recommend";
+import { getSessionUser } from "@/lib/auth";
+import { loadMerchantDetail } from "@/lib/merchant";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const merchant = await prisma.merchant.findUnique({
-    where: { id },
-    include: {
-      school: { select: { id: true, name: true, slug: true } },
-      posts: {
-        where: { status: { not: "hidden" } },
-        include: {
-          author: { select: { id: true, nickname: true, verifiedSchools: true, level: true } },
-          school: { select: { id: true, name: true, slug: true } },
-          major: { select: { id: true, name: true, slug: true } },
-        },
-        take: 100,
-      },
-    },
-  });
-  if (!merchant || merchant.status === "removed") {
-    return NextResponse.json({ error: "商户不存在或已下架" }, { status: 404 });
-  }
-  // 兼容历史数据：无 merchantId 但 merchantName 匹配的推广帖也归入该商户
-  const legacyPosts = await prisma.experiencePost.findMany({
-    where: {
-      status: { not: "hidden" },
-      merchantId: null,
-      merchantName: merchant.name,
-    },
-    include: {
-      author: { select: { id: true, nickname: true, verifiedSchools: true, level: true } },
-      school: { select: { id: true, name: true, slug: true } },
-      major: { select: { id: true, name: true, slug: true } },
-    },
-    take: 100,
-  });
-  const owner = merchant.ownerId
-    ? await prisma.user.findUnique({
-        where: { id: merchant.ownerId },
-        select: { id: true, nickname: true },
-      })
-    : null;
-  const posts = [...merchant.posts, ...legacyPosts].filter(
-    (p, i, arr) => arr.findIndex((x) => x.id === p.id) === i
-  );
-  const sorted = [...posts].sort((a, b) => hotScorePost(b) - hotScorePost(a));
+  const user = await getSessionUser();
+  const detail = await loadMerchantDetail(id, user?.id ?? null);
+  if (!detail) return NextResponse.json({ error: "商户不存在或已下架" }, { status: 404 });
+  const { merchant, owner, posts, reviews, stats } = detail;
   return NextResponse.json({
     ok: true,
     merchant: {
@@ -65,9 +27,22 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       createdAt: merchant.createdAt,
       school: merchant.school,
       owner,
-      postCount: sorted.length,
+      postCount: posts.length,
     },
-    posts: sorted.map((p) => ({
+    stats,
+    reviews: reviews.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      dims: r.dims,
+      content: r.content,
+      isAnonymous: r.isAnonymous,
+      merchantReply: r.merchantReply,
+      merchantRepliedAt: r.merchantRepliedAt,
+      createdAt: r.createdAt,
+      author: r.author,
+      isPromoter: r.isPromoter,
+    })),
+    posts: posts.map((p) => ({
       id: p.id,
       title: p.title,
       content: p.content,
