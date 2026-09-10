@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { POST_TYPES, SCENARIOS } from "@/lib/core";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
-import { allSoftAdHits, checkContentForUser, moderationErrorMessage } from "@/lib/moderation";
+import { allSoftAdHits, checkContentForUser, checkEduCompliance, moderationErrorMessage } from "@/lib/moderation";
 import { hotScorePost, recordAction, tagsOfExperiencePost } from "@/lib/recommend";
 
 const IMAGE_PREFIX = /^data:image\/(png|jpeg|webp|gif);base64,/;
@@ -159,6 +159,14 @@ export async function POST(request: Request) {
         data: { name: merchantName, category: "campus_food", tier: "street", schoolId },
         select: { id: true, name: true, tier: true, category: true },
       });
+    }
+  }
+
+  // 学业服务类商户的进阶合规（v4.7 Phase C）：拦截承诺性宣传与贩卖焦虑
+  if (merchant && merchant.category === "edu_service") {
+    const edu = checkEduCompliance(`${title}\n${content}`);
+    if (!edu.ok) {
+      return NextResponse.json({ error: `学业服务类内容不得出现承诺性宣传（命中：${edu.hit}）` }, { status: 400 });
     }
   }
 

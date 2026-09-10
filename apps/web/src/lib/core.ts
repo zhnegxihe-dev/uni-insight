@@ -210,3 +210,6 @@ export const MERCHANT_REVIEW_DIMS: Record<string, { key: string; label: string }
 
 // 评价数不足该值时不展示星级（防小样本误导）
 export const MERCHANT_MIN_REVIEWS = 5;
+
+// 评价防刷：账号注册满该天数，其评价才计入评分（v4.7 Phase C）
+export const MERCHANT_MIN_ACCOUNT_AGE_DAYS = 3;

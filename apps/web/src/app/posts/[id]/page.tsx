@@ -78,6 +78,15 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
     }
   }
 
+  let reviewSource: { merchantId: string; merchantName: string } | null = null;
+  if (post.sourceReviewId) {
+    const rv = await prisma.merchantReview.findUnique({
+      where: { id: post.sourceReviewId },
+      select: { merchantId: true, merchant: { select: { name: true } } },
+    });
+    if (rv) reviewSource = { merchantId: rv.merchantId, merchantName: rv.merchant?.name ?? "商户" };
+  }
+
   const hidden = post.status === "hidden";
   const folded = post.status === "folded";
   const typeMeta = POST_TYPES.find((p) => p.key === post.postType);
@@ -132,6 +141,19 @@ export default async function ExperiencePostDetailPage({ params }: { params: Pro
             )}
             {scenarioLabel && <span className="rounded bg-zinc-50 px-1.5 py-0.5 text-xs text-zinc-600">{scenarioLabel}</span>}
           </div>
+
+          {reviewSource && (
+            <div className="mb-3 flex items-start gap-2 rounded-md border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs text-zinc-600">
+              <CornerUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+              <span>
+                本帖由一条商户评价同步而来，来自
+                <Link href={`/merchant/${reviewSource.merchantId}`} className="mx-1 font-medium text-accent hover:underline">
+                  《{reviewSource.merchantName}》
+                </Link>
+                的主页。
+              </span>
+            </div>
+          )}
 
           {source && source.degraded && (
             <div className="mb-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-700">

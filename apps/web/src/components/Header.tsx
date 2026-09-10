@@ -28,6 +28,9 @@ export async function Header() {
           <Link href="/following" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
             关注
           </Link>
+          <Link href="/places" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
+            校园生活
+          </Link>
           <Link href="/posts" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">
             经验帖
           </Link>

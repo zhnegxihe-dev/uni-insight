@@ -13,6 +13,8 @@ export function MerchantReviewForm({ merchantId, dims }: { merchantId: string; d
   const [dimValues, setDimValues] = useState<Record<string, number>>({});
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [syncToPost, setSyncToPost] = useState(false);
+  const [syncPostType, setSyncPostType] = useState("experience");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,12 +26,16 @@ export function MerchantReviewForm({ merchantId, dims }: { merchantId: string; d
     const res = await fetch(`/api/merchants/${merchantId}/reviews`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rating, dims: dimValues, content, isAnonymous }),
+      body: JSON.stringify({ rating, dims: dimValues, content, isAnonymous, syncToPost, postType: syncPostType }),
     });
     if (res.status === 401) { router.push("/login"); return; }
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      router.refresh();
+      if (data.postId) {
+        router.push(`/posts/${data.postId}`);
+      } else {
+        router.refresh();
+      }
     } else {
       setError(data.error || "评价提交失败，请稍后重试");
       setBusy(false);
@@ -75,6 +81,21 @@ export function MerchantReviewForm({ merchantId, dims }: { merchantId: string; d
         <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} />
         匿名展示（昵称与认证信息对其他人隐藏，保护差评）
       </label>
+      <div className="rounded-md border border-line p-3">
+        <label className="flex items-center gap-2 text-xs text-zinc-600">
+          <input type="checkbox" checked={syncToPost} onChange={(e) => setSyncToPost(e.target.checked)} />
+          同时发布为帖子（进入经验帖池，可被点赞/收藏并计入创作者激励）
+        </label>
+        {syncToPost && (
+          <div className="mt-2 flex items-center gap-2 pl-6 text-xs text-zinc-500">
+            类型：
+            <select className="input h-8 w-28 py-0" value={syncPostType} onChange={(e) => setSyncPostType(e.target.value)}>
+              <option value="experience">经验帖</option>
+              <option value="avoid">避雷帖</option>
+            </select>
+          </div>
+        )}
+      </div>
       {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
       <div className="flex justify-end">
         <button type="submit" disabled={busy} className="btn-primary disabled:opacity-50">{busy ? "提交中…" : "发布评价"}</button>

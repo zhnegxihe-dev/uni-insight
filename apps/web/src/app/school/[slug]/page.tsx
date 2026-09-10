@@ -10,6 +10,8 @@ import { RatingBars } from "@/components/RatingBars";
 import { ReviewForm } from "@/components/ReviewForm";
 import { ReviewSummaryCard } from "@/components/ReviewSummaryCard";
 import { TrackView } from "@/components/TrackView";
+import { MerchantCard } from "@/components/MerchantCard";
+import { loadMerchantRatings } from "@/lib/merchant";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,13 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
         include: {
           author: { select: { nickname: true, verifiedSchools: true } },
         },
+      },
+      merchants: {
+        where: { status: "active" },
+        include: {
+          _count: { select: { posts: { where: { status: { not: "hidden" } } } } },
+        },
+        take: 12,
       },
     },
   });
@@ -93,6 +102,7 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
     .sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0));
 
   const canReview = user?.verifiedSchools.includes(school.name) ?? false;
+  const merchantRatings = await loadMerchantRatings(school.merchants.map((m) => m.id));
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -138,7 +148,8 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
       </section>
 
       {schoolReviews.length > 0 && (
-        <div className="grid gap-5 lg:grid-cols-2">
+
+      <div className="grid gap-5 lg:grid-cols-2">
           <div className="card p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-semibold text-ink">就读体验评分</h2>
@@ -170,6 +181,25 @@ export default async function SchoolPage({ params }: { params: Promise<{ slug: s
           </div>
           <ReviewSummaryCard reviews={schoolReviews} label={`${school.name}就读体验`} dims={REVIEW_DIMENSIONS.school} />
         </div>
+      )}
+
+        {school.merchants.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-ink">周边生活</h2>
+            <Link href={`/places?tab=campus&school=${school.id}`} className="text-xs text-accent hover:underline">查看全部 →</Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {school.merchants.map((m) => (
+              <MerchantCard
+                key={m.id}
+                merchant={{ id: m.id, name: m.name, category: m.category, tier: m.tier, claimStatus: m.claimStatus, city: m.city, address: m.address, description: m.description, school: { name: school.name, slug: school.slug } }}
+                rating={merchantRatings.get(m.id) ?? { rating: 0, scoredCount: 0, reviewCount: 0, insufficient: true }}
+                postCount={m._count.posts}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       <section className="card p-5">

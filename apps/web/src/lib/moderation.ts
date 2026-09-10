@@ -157,3 +157,21 @@ export function moderationErrorMessage(result: ModerationResult): string {
 export function resetModerationCache(): void {
   cache = null;
 }
+
+/** 教育 / 学业服务类商户的进阶合规检查（v4.7 §8.17 Phase C）：承诺性宣传与贩卖焦虑 */
+const EDU_COMPLIANCE_KEYWORDS = [
+  "包过", "包录取", "保录取", "保过", "保证录取", "稳过", "必过",
+  "100%上岸", "百分百上岸", "确保上岸", "保上岸", "百分之百上岸",
+  "内部渠道", "内部名额", "内部指标", "关系户", "走后门",
+  "不过退款", "保offer", "保Offer", "保OFFER",
+];
+const EDU_ANXIETY_KEYWORDS = [
+  "再不报就来不及", "输在起跑线", "不报就落后", "别人都在报",
+];
+
+export function checkEduCompliance(text: string): { ok: boolean; hit?: string } {
+  const t = String(text || "").toLowerCase();
+  for (const w of EDU_COMPLIANCE_KEYWORDS) if (t.includes(w.toLowerCase())) return { ok: false, hit: w };
+  for (const w of EDU_ANXIETY_KEYWORDS) if (t.includes(w.toLowerCase())) return { ok: false, hit: w };
+  return { ok: true };
+}

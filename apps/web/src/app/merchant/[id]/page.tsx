@@ -128,6 +128,9 @@ export default async function MerchantPage({ params }: { params: Promise<{ id: s
         {stats.promoterExcluded > 0 && (
           <p className="text-xs text-zinc-400">另有 {stats.promoterExcluded} 条来自该商户推广者的评价已展示但不计入评分（避免既当运动员又当裁判）。</p>
         )}
+        {stats.newbieExcluded > 0 && (
+          <p className="text-xs text-zinc-400">另有 {stats.newbieExcluded} 条来自注册不足 3 天新号的评价已展示但不计入评分（防刷）。</p>
+        )}
       </div>
 
       {/* 评价表单 */}
@@ -174,6 +177,12 @@ export default async function MerchantPage({ params }: { params: Promise<{ id: s
               )}
               {r.isPromoter && (
                 <p className="text-xs text-amber-600">该用户曾为这家商户发过推广帖，其评价不计入评分。</p>
+              )}
+              {r.isNewbie && (
+                <p className="text-xs text-zinc-400">该账号注册不足 3 天，评价已展示但暂不计入评分。</p>
+              )}
+              {r.sourcePostId && (
+                <Link href={`/posts/${r.sourcePostId}`} className="text-xs text-accent hover:underline">已同步为帖子，查看 →</Link>
               )}
               {r.merchantReply && (
                 <div className="rounded-md bg-zinc-50 p-3 text-sm text-zinc-600">

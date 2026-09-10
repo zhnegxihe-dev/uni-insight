@@ -19,7 +19,7 @@ export const REPORT_REASONS = [
 ] as const;
 
 export type ReportReason = (typeof REPORT_REASONS)[number]["key"];
-export type ReportTargetType = "question" | "reply" | "review" | "ai_post" | "experience_post";
+export type ReportTargetType = "question" | "reply" | "review" | "ai_post" | "experience_post" | "merchant_review";
 
 export const FOLD_THRESHOLD = 3;
 export const DAILY_REPORT_LIMIT = 20;
@@ -34,6 +34,7 @@ export const REPORT_TARGET_LABEL: Record<ReportTargetType, string> = {
   review: "评价",
   ai_post: "AI 精选帖",
   experience_post: "经验帖/避雷帖",
+  merchant_review: "商户评价",
 };
 
 interface TargetContent {
@@ -82,6 +83,13 @@ export async function getTargetContent(
       });
       return row ? { ownerId: row.authorId, content: row.title } : null;
     }
+    case "merchant_review": {
+      const row = await prisma.merchantReview.findUnique({
+        where: { id: targetId },
+        select: { authorId: true, content: true },
+      });
+      return row ? { ownerId: row.authorId, content: row.content } : null;
+    }
     default:
       return null;
   }
@@ -108,6 +116,23 @@ export async function updateTargetStatus(
     case "experience_post":
       await prisma.experiencePost.update({ where: { id: targetId }, data: { status } });
       break;
+    case "merchant_review": {
+      // 评价被折叠/隐藏时，商户信用分扣 5（v4.7 Phase C 商户信用分）
+      const before = await prisma.merchantReview.findUnique({
+        where: { id: targetId },
+        select: { status: true, merchantId: true },
+      });
+      await prisma.merchantReview.update({ where: { id: targetId }, data: { status } });
+      if (before && before.status === "visible" && status !== "visible") {
+        const merchant = await prisma.merchant.findUnique({
+          where: { id: before.merchantId },
+          select: { creditScore: true },
+        });
+        const next = Math.max(0, (merchant?.creditScore ?? 100) - 5);
+        await prisma.merchant.update({ where: { id: before.merchantId }, data: { creditScore: next } });
+      }
+      break;
+    }
   }
 }
 
