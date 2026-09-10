@@ -1572,7 +1572,8 @@
       "address": "大学城 GOGO 新天地一层",
       "description": "连锁茶饮品牌馆（演示已认领）。学生凭学生证每周三第二杯半价。",
       "status": "active",
-      "createdAt": "2026-09-02T05:00:00.000Z"
+      "createdAt": "2026-09-02T05:00:00.000Z",
+      "ownerId": "cmt8r035w0001n9qk5q0epo44"
     },
     {
       "id": "m_dafu",
@@ -1586,6 +1587,206 @@
       "description": "广州近郊骑行/野餐好去处，南门进可租单车，适合周末半日游。门票免费。",
       "status": "active",
       "createdAt": "2026-09-05T03:00:00.000Z"
+    }
+  ],
+  "merchantReviews": [
+    {
+      "id": "mr_sha_1",
+      "merchantId": "m_sx_food",
+      "authorId": "cmt8r035w0001n9qk5q0epo44",
+      "rating": 5,
+      "dims": {
+        "taste": 5,
+        "env": 4,
+        "service": 5,
+        "value": 5
+      },
+      "content": "拌面花生酱很足，蒸饺皮薄馅大，人均 12 块吃到撑。晚上十点还在营业，赶due救星。",
+      "isAnonymous": false,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-08-29T14:00:00.000Z"
+    },
+    {
+      "id": "mr_sha_2",
+      "merchantId": "m_sx_food",
+      "authorId": "cmt8r03600002n9qk0jl8a7wm",
+      "rating": 4,
+      "dims": {
+        "taste": 4,
+        "env": 3,
+        "service": 4,
+        "value": 4
+      },
+      "content": "味道稳定，就是饭点人多要等。老板会给学生多加一勺，性价比确实高。",
+      "isAnonymous": false,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-08-30T12:30:00.000Z"
+    },
+    {
+      "id": "mr_sha_3",
+      "merchantId": "m_sx_food",
+      "authorId": "cmt8r037m0004n9qkw1jsmrod",
+      "rating": 5,
+      "dims": {
+        "taste": 5,
+        "env": 4,
+        "service": 5,
+        "value": 5
+      },
+      "content": "毕业两年了还会专门绕回来吃。炖罐汤是隐藏菜单，值得试。",
+      "isAnonymous": false,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-09-01T10:10:00.000Z"
+    },
+    {
+      "id": "mr_sha_4",
+      "merchantId": "m_sx_food",
+      "authorId": "cmt8r037t0006n9qk5meg7luf",
+      "rating": 4,
+      "dims": {
+        "taste": 4,
+        "env": 3,
+        "service": 4,
+        "value": 5
+      },
+      "content": "写论文那阵子几乎天天来，出餐快。环境就是路边小店，别期待太多。",
+      "isAnonymous": false,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-09-03T09:20:00.000Z"
+    },
+    {
+      "id": "mr_sha_5",
+      "merchantId": "m_sx_food",
+      "authorId": "cmt8r03i80008n9qkbk1ey08i",
+      "rating": 3,
+      "dims": {
+        "taste": 4,
+        "env": 2,
+        "service": 3,
+        "value": 4
+      },
+      "content": "口味没得说，但桌面偶尔没擦干净，高峰期体验一般。希望改善卫生。",
+      "isAnonymous": false,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-09-05T11:00:00.000Z"
+    },
+    {
+      "id": "mr_sha_6",
+      "merchantId": "m_sx_food",
+      "authorId": "cmt8r03si0009n9qk48vtf0l9",
+      "rating": 5,
+      "dims": {
+        "taste": 5,
+        "env": 4,
+        "service": 5,
+        "value": 5
+      },
+      "content": "（我发过这家推广，这条仅补充个人感受）老板真的实在，加面不加价。",
+      "isAnonymous": false,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-09-06T13:00:00.000Z"
+    },
+    {
+      "id": "mr_dian_1",
+      "merchantId": "m_ydian",
+      "authorId": "cmt8r03610003n9qkz0rdlucw",
+      "rating": 4,
+      "dims": {
+        "taste": 4,
+        "env": 4,
+        "service": 4,
+        "value": 3
+      },
+      "content": "四季春玛奇朵稳定发挥，复习周续命。周三学生第二杯半价挺划算。",
+      "isAnonymous": false,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-09-04T07:00:00.000Z"
+    },
+    {
+      "id": "mr_dian_2",
+      "merchantId": "m_ydian",
+      "authorId": "cmt8r037u0007n9qkak0hoo4s",
+      "rating": 4,
+      "dims": {
+        "taste": 4,
+        "env": 4,
+        "service": 3,
+        "value": 4
+      },
+      "content": "出杯速度快，晚自习后人有点多。新品偏甜，建议点单时备注少糖。",
+      "isAnonymous": false,
+      "merchantReply": "感谢反馈！少糖可以备注，我们会提醒店员控制糖度～",
+      "merchantRepliedAt": "2026-09-09T08:00:00.000Z",
+      "status": "visible",
+      "createdAt": "2026-09-05T08:30:00.000Z"
+    },
+    {
+      "id": "mr_dian_3",
+      "merchantId": "m_ydian",
+      "authorId": "cmt8r037s0005n9qk1au7139e",
+      "rating": 5,
+      "dims": {
+        "taste": 5,
+        "env": 5,
+        "service": 5,
+        "value": 4
+      },
+      "content": "来大学城参观的时候喝的，店员很热情，还推荐了附近好吃的地方。",
+      "isAnonymous": false,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-09-07T05:00:00.000Z"
+    },
+    {
+      "id": "mr_dafu_1",
+      "merchantId": "m_dafu",
+      "authorId": "cmt8r035w0001n9qk5q0epo44",
+      "rating": 4,
+      "dims": {
+        "view": 4,
+        "traffic": 3,
+        "crowd": 4,
+        "value": 5
+      },
+      "content": "南门租车 15 块能骑一下午，湖边那段景色最好。地铁转公交略折腾。",
+      "isAnonymous": false,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-09-06T02:00:00.000Z"
+    },
+    {
+      "id": "mr_dafu_2",
+      "merchantId": "m_dafu",
+      "authorId": "cmt8r03600002n9qk0jl8a7wm",
+      "rating": 4,
+      "dims": {
+        "view": 5,
+        "traffic": 3,
+        "crowd": 3,
+        "value": 5
+      },
+      "content": "周末人不少但不算挤，适合野餐。记得自带水和驱蚊液。",
+      "isAnonymous": true,
+      "merchantReply": null,
+      "merchantRepliedAt": null,
+      "status": "visible",
+      "createdAt": "2026-09-08T03:30:00.000Z"
     }
   ]
 }

@@ -32,6 +32,49 @@ export const MERCHANT_TIERS = [
   { key: "chain", label: "品牌馆", hint: "认证大商家 / 连锁品牌（付费入驻）" },
 ];
 
+// 商户评价维度（v4.7 Phase B：按品类定制，1-5 分）
+export const MERCHANT_REVIEW_DIMS = {
+  campus_food: [
+    { key: "taste", label: "口味" },
+    { key: "env", label: "环境" },
+    { key: "service", label: "服务" },
+    { key: "value", label: "性价比" },
+  ],
+  city_food: [
+    { key: "taste", label: "口味" },
+    { key: "env", label: "环境" },
+    { key: "service", label: "服务" },
+    { key: "value", label: "性价比" },
+  ],
+  scenic: [
+    { key: "view", label: "风景" },
+    { key: "traffic", label: "交通便利" },
+    { key: "crowd", label: "人流" },
+    { key: "value", label: "性价比" },
+  ],
+  leisure: [
+    { key: "experience", label: "体验" },
+    { key: "env", label: "环境" },
+    { key: "value", label: "性价比" },
+    { key: "suit", label: "适合度" },
+  ],
+  life_service: [
+    { key: "professional", label: "专业" },
+    { key: "service", label: "服务" },
+    { key: "value", label: "性价比" },
+  ],
+  edu_service: [
+    { key: "professional", label: "专业性" },
+    { key: "transparency", label: "信息透明度" },
+    { key: "service", label: "服务态度" },
+    { key: "value", label: "性价比" },
+    { key: "result", label: "结果真实性" },
+  ],
+};
+
+// 评价数不足该值时不显示星级（防小样本误导）
+export const MERCHANT_MIN_REVIEWS = 5;
+
 
 export const SCENARIO_LABEL = {
   gaokao: "高考志愿",
@@ -115,6 +158,7 @@ function initState() {
     aiPosts: seed.aiPosts.map((p) => ({ ...p })),
     experiencePosts: seed.experiencePosts ? seed.experiencePosts.map((p) => ({ ...p })) : [],
     merchants: seed.merchants ? seed.merchants.map((m) => ({ ...m })) : [],
+    merchantReviews: seed.merchantReviews ? seed.merchantReviews.map((r) => ({ ...r })) : [],
     myStars: [],
     myFavorites: [],
     follows: [],
@@ -137,6 +181,7 @@ export function loadState() {
         }
         if (!Array.isArray(parsed.myFavorites)) parsed.myFavorites = [];
         if (!Array.isArray(parsed.merchants)) parsed.merchants = seed.merchants ? seed.merchants.map((m) => ({ ...m })) : [];
+        if (!Array.isArray(parsed.merchantReviews)) parsed.merchantReviews = seed.merchantReviews ? seed.merchantReviews.map((r) => ({ ...r })) : [];
         for (const u of parsed.users) if (typeof u.trustScore !== "number") u.trustScore = 0;
         for (const x of parsed.experiencePosts) if (!("merchantName" in x)) x.merchantName = null;
         for (const q of parsed.questions) if (typeof q.favoriteCount !== "number") q.favoriteCount = 0;
@@ -522,7 +567,44 @@ export function getMerchant(state, id) {
   const posts = state.experiencePosts
     .filter((x) => x.status !== "hidden" && (x.merchantId === id || (x.merchantName && x.merchantName === merchant.name)))
     .sort((a, b) => hotScorePost(b) - hotScorePost(a));
-  return { merchant, posts };
+
+  const reviewRows = state.merchantReviews
+    .filter((r) => r.merchantId === id && r.status !== "hidden")
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const promoterIds = new Set(state.experiencePosts.filter((x) => x.merchantId === id && x.postType === "promo" && x.status !== "hidden").map((x) => x.authorId));
+  const scored = reviewRows.filter((r) => !promoterIds.has(r.authorId));
+  const rating = scored.length ? scored.reduce((s, r) => s + r.rating, 0) / scored.length : 0;
+  const dimDefs = MERCHANT_REVIEW_DIMS[merchant.category] ?? [];
+  const dims = dimDefs.map((d) => {
+    const values = scored.map((r) => (r.dims || {})[d.key]).filter((v) => typeof v === "number" && v >= 1 && v <= 5);
+    return { key: d.key, label: d.label, value: values.length ? Number((values.reduce((s, v) => s + v, 0) / values.length).toFixed(1)) : 0 };
+  });
+
+  const user = getCurrentUser(state);
+  const reviews = reviewRows.map((r) => ({
+    ...r,
+    dims: r.dims || {},
+    author: r.isAnonymous ? null : state.users.find((u) => u.id === r.authorId) ?? null,
+    isPromoter: promoterIds.has(r.authorId),
+  }));
+  const myReview = user ? reviews.find((r) => r.authorId === user.id) ?? null : null;
+  const canReply = Boolean(user && merchant.ownerId && merchant.ownerId === user.id);
+  return {
+    merchant,
+    posts,
+    reviews,
+    myReview,
+    canReply,
+    dimDefs,
+    stats: {
+      reviewCount: reviewRows.length,
+      scoredCount: scored.length,
+      rating: Number(rating.toFixed(1)),
+      insufficient: scored.length < MERCHANT_MIN_REVIEWS,
+      promoterExcluded: reviewRows.length - scored.length,
+      dims,
+    },
+  };
 }
 
 export function merchantOf(state, post) {
@@ -546,6 +628,58 @@ export function createMerchant(state, { name, category = "campus_food", tier = "
   return merchant;
 }
 
+
+/* ---------- 商户评价 / 认领（v4.7 Phase B） ---------- */
+export function createMerchantReview(state, merchantId, { rating, dims = {}, content, isAnonymous = false }) {
+  const user = getCurrentUser(state);
+  if (!user) throw new Error("请先登录");
+  const merchant = state.merchants.find((m) => m.id === merchantId && m.status !== "removed");
+  if (!merchant) throw new Error("商户不存在或不可用");
+  const r = Number(rating);
+  if (!Number.isInteger(r) || r < 1 || r > 5) throw new Error("请选择 1-5 星总评");
+  const text = String(content || "").trim().slice(0, 2000);
+  if (text.length < 5) throw new Error("评价内容至少 5 个字");
+  if (/微信|qq|手机号|电话|保录取|代写|收款|扫码|加我|http|转账/i.test(text)) throw new Error("内容疑似广告/中介，请移除联系方式");
+  if (state.merchantReviews.some((x) => x.merchantId === merchantId && x.authorId === user.id)) throw new Error("你已经评价过该商户了");
+  const allowed = MERCHANT_REVIEW_DIMS[merchant.category] ?? [];
+  const cleanDims = {};
+  for (const d of allowed) {
+    const v = Number(dims[d.key]);
+    if (Number.isFinite(v) && v >= 1 && v <= 5) cleanDims[d.key] = Math.round(v);
+  }
+  const review = { id: uid("mr"), merchantId, authorId: user.id, rating: r, dims: cleanDims, content: text, isAnonymous: Boolean(isAnonymous), merchantReply: null, merchantRepliedAt: null, status: "visible", createdAt: new Date().toISOString() };
+  state.merchantReviews.push(review);
+  saveState(state);
+  return review;
+}
+
+export function replyMerchantReview(state, merchantId, reviewId, reply) {
+  const user = getCurrentUser(state);
+  if (!user) throw new Error("请先登录");
+  const merchant = state.merchants.find((m) => m.id === merchantId);
+  if (!merchant) throw new Error("商户不存在");
+  if (merchant.ownerId !== user.id && (user.role || "user") !== "admin") throw new Error("只有商户主理人可回复评价");
+  const review = state.merchantReviews.find((r) => r.id === reviewId && r.merchantId === merchantId);
+  if (!review) throw new Error("评价不存在");
+  const text = String(reply || "").trim().slice(0, 500);
+  if (!text) throw new Error("请填写回复内容");
+  review.merchantReply = text;
+  review.merchantRepliedAt = new Date().toISOString();
+  saveState(state);
+  return review;
+}
+
+export function claimMerchant(state, merchantId) {
+  const user = getCurrentUser(state);
+  if (!user) throw new Error("请先登录");
+  const merchant = state.merchants.find((m) => m.id === merchantId && m.status !== "removed");
+  if (!merchant) throw new Error("商户不存在");
+  if (merchant.claimStatus === "claimed") throw new Error("该商户已被认领");
+  merchant.claimStatus = "claimed";
+  merchant.ownerId = user.id;
+  saveState(state);
+  return merchant;
+}
 
 /* ---------- star ---------- */
 export function toggleStar(state, targetType, targetId) {
