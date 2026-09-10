@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, ChevronLeft, MapPin, Plus, Star, Store } from "lucide-react";
+import { BadgeCheck, ChevronLeft, Crown, MapPin, Plus, Star, Store } from "lucide-react";
 import { getSessionUser } from "@/lib/auth";
 import { loadMerchantDetail } from "@/lib/merchant";
 import { MERCHANT_CATEGORIES, MERCHANT_TIERS, MERCHANT_MIN_REVIEWS } from "@/lib/core";
 import { formatRelative } from "@/lib/format";
 import { ExperiencePostCard } from "@/components/ExperiencePostCard";
+import { MerchantContactButton } from "@/components/MerchantContactButton";
 import { MerchantReviewForm } from "@/components/MerchantReviewForm";
 import { MerchantClaimButton } from "@/components/MerchantClaimButton";
 import { MerchantReviewReply } from "@/components/MerchantReviewReply";
@@ -67,6 +68,11 @@ export default async function MerchantPage({ params }: { params: Promise<{ id: s
                   <BadgeCheck className="h-3 w-3" />已认领
                 </span>
               )}
+              {merchant.plan !== "free" && (
+                <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
+                  <Crown className="h-3 w-3" />品牌馆
+                </span>
+              )}
             </div>
             {(merchant.school || merchant.city || merchant.address) && (
               <p className="mt-2 inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
@@ -80,9 +86,12 @@ export default async function MerchantPage({ params }: { params: Promise<{ id: s
               </p>
             )}
           </div>
-          <Link href={"/posts/new?type=promo&merchant=" + merchant.id} className="btn-primary whitespace-nowrap">
-            <Plus className="h-4 w-4" />为该商户发推广帖
-          </Link>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <MerchantContactButton merchantId={merchant.id} />
+            <Link href={"/posts/new?type=promo&merchant=" + merchant.id} className="btn-ghost whitespace-nowrap">
+              <Plus className="h-4 w-4" />为该商户发推广帖
+            </Link>
+          </div>
         </div>
 
         {merchant.description && <p className="text-sm leading-relaxed text-zinc-600">{merchant.description}</p>}
@@ -91,6 +100,9 @@ export default async function MerchantPage({ params }: { params: Promise<{ id: s
           <span>{posts.length} 条关联帖子</span>
           <span>{stats.reviewCount} 条评价</span>
           {owner && <span>主理人：{owner.nickname}</span>}
+          {(canReply || (user && user.id === merchant.ownerId)) && (
+            <Link href={`/merchant/${merchant.id}/dashboard`} className="font-medium text-accent hover:underline">商户后台</Link>
+          )}
           {merchant.claimStatus === "unclaimed" && user && <MerchantClaimButton merchantId={merchant.id} />}
           {merchant.claimStatus === "unclaimed" && !user && <span>商户尚未认领，登录后可认领</span>}
         </div>

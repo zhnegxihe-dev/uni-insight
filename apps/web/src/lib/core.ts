@@ -213,3 +213,14 @@ export const MERCHANT_MIN_REVIEWS = 5;
 
 // 评价防刷：账号注册满该天数，其评价才计入评分（v4.7 Phase C）
 export const MERCHANT_MIN_ACCOUNT_AGE_DAYS = 3;
+
+// 品牌馆套餐与佣金（v4.7 Phase D 商业闭环）
+export const MERCHANT_PLANS = [
+  { key: "free", label: "免费版", price: 0, period: "", perks: ["基础商户主页", "推广帖发布", "评价与回复"] },
+  { key: "brand_basic", label: "品牌馆 · 基础", price: 29900, period: "年", perks: ["品牌馆认证标识", "推广帖优先排序", "官方活动位", "数据后台"] },
+  { key: "brand_pro", label: "品牌馆 · 专业", price: 99900, period: "年", perks: ["基础版全部权益", "首页曝光位", "线索 CRM 与成交看板", "佣金结算对账"] },
+] as const;
+export type MerchantPlanKey = (typeof MERCHANT_PLANS)[number]["key"];
+
+export const PLATFORM_COMMISSION_RATE = 0.1; // 平台成交佣金 10%
+export const PROMOTER_COMMISSION_RATE = 0.05; // 学生推广者分成 5%

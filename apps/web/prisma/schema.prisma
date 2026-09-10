@@ -40,6 +40,7 @@ model User {
   conversationsB Conversation[] @relation("convB")
   messages      Message[]
   merchantReviews MerchantReview[]
+  merchantLeads MerchantLead[]
 }
 
 model School {
@@ -403,9 +404,14 @@ model Merchant {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  plan          String   @default("free") // free | brand_basic | brand_pro（v4.7 Phase D 品牌馆套餐）
+  planExpiresAt DateTime?
+
   school School? @relation(fields: [schoolId], references: [id])
   posts  ExperiencePost[]
   reviews MerchantReview[]
+  leads  MerchantLead[]
+  commissions MerchantCommission[]
 
   @@index([schoolId, status])
   @@index([category, status])
@@ -434,4 +440,45 @@ model MerchantReview {
   @@unique([merchantId, authorId]) // 同商户同用户仅一条评价（可扩展为主评价 + 追评）
   @@index([merchantId, status])
   @@index([authorId])
+}
+
+// 商户线索 / 担保成交（v4.7 Phase D 商业闭环）
+model MerchantLead {
+  id                 String   @id @default(cuid())
+  merchantId         String
+  userId             String?  // 发起咨询的用户（未登录用户为 null）
+  sourcePostId       String?  // 归因来源帖子（推广帖）
+  sourcePostAuthorId String?  // 来源推广帖作者（佣金分成对象）
+  contact            String?
+  message            String?
+  status             String   @default("new") // new | contacted | deal | cancelled
+  dealAmount         Int?     // 成交金额（分）
+  dealAt             DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id])
+
+  @@index([merchantId, status])
+  @@index([sourcePostAuthorId])
+}
+
+// 佣金与分成记录（v4.7 Phase D）：平台佣金 + 学生推广者分成
+model MerchantCommission {
+  id            String   @id @default(cuid())
+  merchantId    String
+  leadId        String?
+  beneficiaryId String?  // 收益方：平台为 null，学生推广者为 userId
+  kind          String   // platform | promoter
+  amount        Int      // 佣金金额（分）
+  baseAmount    Int      // 成交金额基数（分）
+  rate          Float
+  status        String   @default("pending") // pending | settled | cancelled
+  createdAt     DateTime @default(now())
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, status])
+  @@index([beneficiaryId])
 }
