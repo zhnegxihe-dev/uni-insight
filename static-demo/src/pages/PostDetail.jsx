@@ -72,6 +72,14 @@ export default function PostDetail() {
   const schools = JSON.parse(post.author?.verifiedSchools || "[]");
   const scenarioLabel = post.scenarioType ? (db.SCENARIO_LABEL[post.scenarioType] ?? post.scenarioType) : null;
   const source = db.postSource(state, post);
+  const reviewSource = post.sourceReviewId
+    ? (() => {
+        const rv = state.merchantReviews.find((r) => r.id === post.sourceReviewId);
+        if (!rv) return null;
+        const m = state.merchants.find((x) => x.id === rv.merchantId);
+        return { merchantId: rv.merchantId, merchantName: m?.name ?? post.merchantName ?? "商户" };
+      })()
+    : null;
   let images = []; try { images = JSON.parse(post.images || "[]"); } catch {}
   const sourceText = source && !source.degraded ? `${source.isQuote ? "引用了" : "由"} @${source.replyAuthorName} 的回复 · 转自《${source.question?.title || ""}》` : null;
 
@@ -91,6 +99,17 @@ export default function PostDetail() {
           {scenarioLabel && <span className="rounded bg-zinc-50 px-1.5 py-0.5 text-xs text-zinc-600">{scenarioLabel}</span>}
           {source && !source.degraded && <span className="inline-flex items-center gap-1 rounded bg-violet-50 px-1.5 py-0.5 text-[11px] font-medium text-violet-600"><CornerUpRight className="h-3 w-3" />由回复{source.isQuote ? "引用" : "升级"}生成</span>}
         </div>
+
+        {reviewSource && (
+          <div className="mb-3 flex items-start gap-2 rounded-md border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs text-zinc-600">
+            <CornerUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+            <span>
+              本帖由一条商户评价同步而来，来自
+              <Link to={`/merchant/${reviewSource.merchantId}`} className="mx-1 font-medium text-accent hover:underline">《{reviewSource.merchantName}》</Link>
+              的主页。
+            </span>
+          </div>
+        )}
 
         {source && source.degraded && (
           <div className="mb-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-700">

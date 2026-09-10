@@ -23,6 +23,7 @@ import PostNew from "./pages/PostNew";
 import PostDetail from "./pages/PostDetail";
 import Merchant from "./pages/Merchant";
 import Schools from "./pages/Schools";
+import Places from "./pages/Places";
 
 function Header() {
   const state = useDb();
@@ -45,6 +46,7 @@ function Header() {
 
         <nav className="hidden shrink-0 items-center gap-0.5 text-sm text-zinc-600 lg:flex">
           <Link to="/" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">发现</Link>
+          <Link to="/places" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">校园生活</Link>
           <Link to="/posts" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">经验帖</Link>
           <Link to="/schools" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">院校</Link>
           <Link to="/levels" className="whitespace-nowrap rounded-md px-3 py-1.5 hover:bg-zinc-50">积分等级</Link>
@@ -151,6 +153,7 @@ export default function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/levels" element={<Levels />} />
           <Route path="/schools" element={<Schools />} />
+          <Route path="/places" element={<Places />} />
 
           <Route path="/posts" element={<Posts />} />
           <Route path="/posts/new" element={<PostNew />} />

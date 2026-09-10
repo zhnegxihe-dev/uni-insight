@@ -1545,6 +1545,26 @@
       "favoriteCount": 3,
       "status": "visible",
       "createdAt": "2026-09-05T03:30:00.000Z"
+    },
+    {
+      "id": "p_review_sha",
+      "authorId": "cmt8r035w0001n9qk5q0epo44",
+      "title": "南门沙县小吃体验：拌面花生酱很足，蒸饺皮薄馅大，人均 12 块吃到撑。晚上十点",
+      "content": "拌面花生酱很足，蒸饺皮薄馅大，人均 12 块吃到撑。晚上十点还在营业，赶due救星。",
+      "postType": "experience",
+      "scenarioType": null,
+      "schoolId": "cmt8r04nn000an9qk86ycs8iq",
+      "majorId": null,
+      "courseId": null,
+      "teacherId": null,
+      "merchantName": "南门沙县小吃",
+      "merchantId": "m_sx_food",
+      "images": "[]",
+      "sourceReviewId": "mr_sha_1",
+      "likeCount": 2,
+      "favoriteCount": 1,
+      "status": "visible",
+      "createdAt": "2026-09-09T06:00:00.000Z"
     }
   ],
   "merchants": [
@@ -1559,7 +1579,8 @@
       "address": "中大南门巷子口往里 50 米",
       "description": "学长学姐晚自习后的快乐老家，拌面蒸饺量大实惠，学生党常客。店主尚未认领，认领功能开放后可认领主页。",
       "status": "active",
-      "createdAt": "2026-08-28T09:00:00.000Z"
+      "createdAt": "2026-08-28T09:00:00.000Z",
+      "creditScore": 100
     },
     {
       "id": "m_ydian",
@@ -1573,7 +1594,8 @@
       "description": "连锁茶饮品牌馆（演示已认领）。学生凭学生证每周三第二杯半价。",
       "status": "active",
       "createdAt": "2026-09-02T05:00:00.000Z",
-      "ownerId": "cmt8r035w0001n9qk5q0epo44"
+      "ownerId": "cmt8r035w0001n9qk5q0epo44",
+      "creditScore": 100
     },
     {
       "id": "m_dafu",
@@ -1586,7 +1608,8 @@
       "address": "番禺区禺山西路",
       "description": "广州近郊骑行/野餐好去处，南门进可租单车，适合周末半日游。门票免费。",
       "status": "active",
-      "createdAt": "2026-09-05T03:00:00.000Z"
+      "createdAt": "2026-09-05T03:00:00.000Z",
+      "creditScore": 100
     }
   ],
   "merchantReviews": [
@@ -1606,7 +1629,8 @@
       "merchantReply": null,
       "merchantRepliedAt": null,
       "status": "visible",
-      "createdAt": "2026-08-29T14:00:00.000Z"
+      "createdAt": "2026-08-29T14:00:00.000Z",
+      "sourcePostId": "p_review_sha"
     },
     {
       "id": "mr_sha_2",

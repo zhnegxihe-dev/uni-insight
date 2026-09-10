@@ -74,6 +74,7 @@ export const MERCHANT_REVIEW_DIMS = {
 
 // 评价数不足该值时不显示星级（防小样本误导）
 export const MERCHANT_MIN_REVIEWS = 5;
+export const MERCHANT_MIN_ACCOUNT_AGE_DAYS = 3;
 
 
 export const SCENARIO_LABEL = {
@@ -572,7 +573,16 @@ export function getMerchant(state, id) {
     .filter((r) => r.merchantId === id && r.status !== "hidden")
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const promoterIds = new Set(state.experiencePosts.filter((x) => x.merchantId === id && x.postType === "promo" && x.status !== "hidden").map((x) => x.authorId));
-  const scored = reviewRows.filter((r) => !promoterIds.has(r.authorId));
+  const minAgeMs = MERCHANT_MIN_ACCOUNT_AGE_DAYS * 24 * 60 * 60 * 1000;
+  const newbieIds = new Set(
+    reviewRows
+      .filter((r) => {
+        const u = state.users.find((x) => x.id === r.authorId);
+        return u && u.createdAt ? Date.now() - new Date(u.createdAt).getTime() < minAgeMs : false;
+      })
+      .map((r) => r.authorId)
+  );
+  const scored = reviewRows.filter((r) => !promoterIds.has(r.authorId) && !newbieIds.has(r.authorId));
   const rating = scored.length ? scored.reduce((s, r) => s + r.rating, 0) / scored.length : 0;
   const dimDefs = MERCHANT_REVIEW_DIMS[merchant.category] ?? [];
   const dims = dimDefs.map((d) => {
@@ -586,6 +596,7 @@ export function getMerchant(state, id) {
     dims: r.dims || {},
     author: r.isAnonymous ? null : state.users.find((u) => u.id === r.authorId) ?? null,
     isPromoter: promoterIds.has(r.authorId),
+    isNewbie: newbieIds.has(r.authorId),
   }));
   const myReview = user ? reviews.find((r) => r.authorId === user.id) ?? null : null;
   const canReply = Boolean(user && merchant.ownerId && merchant.ownerId === user.id);
@@ -601,7 +612,8 @@ export function getMerchant(state, id) {
       scoredCount: scored.length,
       rating: Number(rating.toFixed(1)),
       insufficient: scored.length < MERCHANT_MIN_REVIEWS,
-      promoterExcluded: reviewRows.length - scored.length,
+      promoterExcluded: reviewRows.filter((r) => promoterIds.has(r.authorId)).length,
+      newbieExcluded: newbieIds.size,
       dims,
     },
   };
@@ -630,7 +642,7 @@ export function createMerchant(state, { name, category = "campus_food", tier = "
 
 
 /* ---------- 商户评价 / 认领（v4.7 Phase B） ---------- */
-export function createMerchantReview(state, merchantId, { rating, dims = {}, content, isAnonymous = false }) {
+export function createMerchantReview(state, merchantId, { rating, dims = {}, content, isAnonymous = false, syncToPost = false, postType = "experience" }) {
   const user = getCurrentUser(state);
   if (!user) throw new Error("请先登录");
   const merchant = state.merchants.find((m) => m.id === merchantId && m.status !== "removed");
@@ -640,6 +652,7 @@ export function createMerchantReview(state, merchantId, { rating, dims = {}, con
   const text = String(content || "").trim().slice(0, 2000);
   if (text.length < 5) throw new Error("评价内容至少 5 个字");
   if (/微信|qq|手机号|电话|保录取|代写|收款|扫码|加我|http|转账/i.test(text)) throw new Error("内容疑似广告/中介，请移除联系方式");
+  if (merchant.category === "edu_service" && /包过|包录取|保录取|保过|保证录取|稳过|必过|100%上岸|百分百上岸|内部渠道|内部名额|不过退款|保offer|保Offer|再不报就来不及|输在起跑线/i.test(text)) throw new Error("学业服务类内容不得出现承诺性宣传");
   if (state.merchantReviews.some((x) => x.merchantId === merchantId && x.authorId === user.id)) throw new Error("你已经评价过该商户了");
   const allowed = MERCHANT_REVIEW_DIMS[merchant.category] ?? [];
   const cleanDims = {};
@@ -647,10 +660,44 @@ export function createMerchantReview(state, merchantId, { rating, dims = {}, con
     const v = Number(dims[d.key]);
     if (Number.isFinite(v) && v >= 1 && v <= 5) cleanDims[d.key] = Math.round(v);
   }
-  const review = { id: uid("mr"), merchantId, authorId: user.id, rating: r, dims: cleanDims, content: text, isAnonymous: Boolean(isAnonymous), merchantReply: null, merchantRepliedAt: null, status: "visible", createdAt: new Date().toISOString() };
+  const review = { id: uid("mr"), merchantId, authorId: user.id, rating: r, dims: cleanDims, content: text, isAnonymous: Boolean(isAnonymous), merchantReply: null, merchantRepliedAt: null, sourcePostId: null, status: "visible", createdAt: new Date().toISOString() };
   state.merchantReviews.push(review);
+
+  // 评价 ⇄ 帖 双写（v4.7 Phase C）
+  let postId = null;
+  if (syncToPost) {
+    const type = postType === "avoid" ? "avoid" : "experience";
+    const snippet = text.replace(/\s+/g, " ").slice(0, 30);
+    const title = `${merchant.name}${type === "avoid" ? "避雷提醒" : "体验"}：${snippet}`.slice(0, 100);
+    const post = {
+      id: uid("p"),
+      authorId: user.id,
+      title,
+      content: text,
+      postType: type,
+      scenarioType: null,
+      schoolId: merchant.schoolId || null,
+      majorId: null,
+      courseId: null,
+      teacherId: null,
+      merchantName: merchant.name,
+      merchantId: merchant.id,
+      images: "[]",
+      sourceReplyId: null,
+      sourceQuestionId: null,
+      sourceReviewId: review.id,
+      mode: "upgrade",
+      likeCount: 0,
+      favoriteCount: 0,
+      status: "visible",
+      createdAt: new Date().toISOString(),
+    };
+    state.experiencePosts.push(post);
+    review.sourcePostId = post.id;
+    postId = post.id;
+  }
   saveState(state);
-  return review;
+  return { ...review, postId };
 }
 
 export function replyMerchantReview(state, merchantId, reviewId, reply) {
@@ -1008,4 +1055,23 @@ export function formatRelative(dateStr) {
   if (diff < 7 * day) return `${Math.floor(diff / day)} 天前`;
   const d = new Date(ts);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/* ---------- 商户评分批量聚合（v4.7 Phase C 列表页用） ---------- */
+export function loadMerchantRatings(state, merchantIds) {
+  const map = new Map();
+  const minAgeMs = MERCHANT_MIN_ACCOUNT_AGE_DAYS * 24 * 60 * 60 * 1000;
+  for (const id of merchantIds) {
+    const rows = state.merchantReviews.filter((r) => r.merchantId === id && r.status !== "hidden");
+    const promoterIds = new Set(state.experiencePosts.filter((x) => x.merchantId === id && x.postType === "promo" && x.status !== "hidden").map((x) => x.authorId));
+    const scored = rows.filter((r) => {
+      if (promoterIds.has(r.authorId)) return false;
+      const u = state.users.find((x) => x.id === r.authorId);
+      if (u && u.createdAt && Date.now() - new Date(u.createdAt).getTime() < minAgeMs) return false;
+      return true;
+    });
+    const rating = scored.length ? scored.reduce((s, r) => s + r.rating, 0) / scored.length : 0;
+    map.set(id, { rating: Number(rating.toFixed(1)), scoredCount: scored.length, reviewCount: rows.length, insufficient: scored.length < MERCHANT_MIN_REVIEWS });
+  }
+  return map;
 }

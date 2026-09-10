@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { BadgeCheck, MapPin, Plus, Star, Store } from "lucide-react";
 import { useDb, act } from "../store";
 import * as db from "../db";
@@ -18,6 +18,7 @@ function Stars({ value, size = "h-4 w-4" }) {
 export default function Merchant() {
   const state = useDb();
   const { id } = useParams();
+  const navigate = useNavigate();
   const user = db.getCurrentUser(state);
   const data = db.getMerchant(state, id);
 
@@ -25,6 +26,8 @@ export default function Merchant() {
   const [dimValues, setDimValues] = useState({});
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [syncToPost, setSyncToPost] = useState(false);
+  const [syncPostType, setSyncPostType] = useState("experience");
   const [formError, setFormError] = useState("");
   const [replyOpen, setReplyOpen] = useState(null);
   const [replyText, setReplyText] = useState("");
@@ -46,11 +49,13 @@ export default function Merchant() {
     e.preventDefault();
     setFormError("");
     try {
-      act(db.createMerchantReview, merchant.id, { rating, dims: dimValues, content, isAnonymous });
+      const created = act(db.createMerchantReview, merchant.id, { rating, dims: dimValues, content, isAnonymous, syncToPost, postType: syncPostType });
       setRating(0);
       setDimValues({});
       setContent("");
       setIsAnonymous(false);
+      setSyncToPost(false);
+      if (created && created.postId) navigate(`/posts/${created.postId}`);
     } catch (err) {
       setFormError(err.message);
     }
@@ -189,6 +194,21 @@ export default function Merchant() {
             <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} />
             匿名展示（昵称与认证信息对其他人隐藏，保护差评）
           </label>
+          <div className="rounded-md border border-line p-3">
+            <label className="flex items-center gap-2 text-xs text-zinc-600">
+              <input type="checkbox" checked={syncToPost} onChange={(e) => setSyncToPost(e.target.checked)} />
+              同时发布为帖子（进入经验帖池，可被点赞/收藏并计入创作者激励）
+            </label>
+            {syncToPost && (
+              <div className="mt-2 flex items-center gap-2 pl-6 text-xs text-zinc-500">
+                类型：
+                <select className="input h-8 w-28 py-0" value={syncPostType} onChange={(e) => setSyncPostType(e.target.value)}>
+                  <option value="experience">经验帖</option>
+                  <option value="avoid">避雷帖</option>
+                </select>
+              </div>
+            )}
+          </div>
           {formError && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{formError}</p>}
           <div className="flex justify-end">
             <button type="submit" className="btn-primary">发布评价</button>
@@ -223,6 +243,8 @@ export default function Merchant() {
                 </div>
               )}
               {r.isPromoter && <p className="text-xs text-amber-600">该用户曾为这家商户发过推广帖，其评价不计入评分。</p>}
+              {r.isNewbie && <p className="text-xs text-zinc-400">该账号注册不足 3 天，评价已展示但暂不计入评分。</p>}
+              {r.sourcePostId && <Link to={`/posts/${r.sourcePostId}`} className="text-xs text-accent hover:underline">已同步为帖子，查看 →</Link>}
               {r.merchantReply && (
                 <div className="rounded-md bg-zinc-50 p-3 text-sm text-zinc-600">
                   <p className="mb-1 text-xs font-medium text-zinc-500">商户回复</p>

@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useDb } from "../store";
 import * as db from "../db";
-import { QuestionCard, RatingBars, VerifiedBadge } from "../components";
+import { MerchantCard, QuestionCard, RatingBars, VerifiedBadge } from "../components";
 
 export default function School() {
   const { slug } = useParams();
@@ -12,6 +12,8 @@ export default function School() {
 
   const reviews = school.reviews.map((r) => ({ ...r, author: state.users.find((u) => u.id === r.authorId) }));
   const verifiedCount = state.users.filter((u) => JSON.parse(u.verifiedSchools || "[]").includes(school.name)).length;
+  const merchants = state.merchants.filter((m) => m.schoolId === school.id && m.status !== "removed");
+  const merchantRatings = db.loadMerchantRatings(state, merchants.map((m) => m.id));
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -39,6 +41,20 @@ export default function School() {
             { key: "teaching", label: "教学" }, { key: "workload", label: "课业量" }, { key: "difficulty", label: "难度" },
             { key: "employment", label: "就业口碑" }, { key: "atmosphere", label: "同学氛围" },
           ]} />
+        </section>
+      )}
+
+      {merchants.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-ink">周边生活</h2>
+            <Link to="/places" className="text-xs text-accent hover:underline">查看全部 →</Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {merchants.map((m) => (
+              <MerchantCard key={m.id} merchant={m} rating={merchantRatings.get(m.id) ?? { rating: 0, scoredCount: 0, reviewCount: 0, insufficient: true }} postCount={state.experiencePosts.filter((x) => x.status !== "hidden" && (x.merchantId === m.id || x.merchantName === m.name)).length} />
+            ))}
+          </div>
         </section>
       )}
 
