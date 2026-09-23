@@ -117,10 +117,7 @@ function render() {
           <p class="eyebrow">REAL CAMPUS NOTES</p>
           <p class="hero-kicker">${escapeHtml(data.heroSubtitle)}</p>
           <div class="hero-actions">
-            <button class="primary-button" type="button" data-action="focus-search">
-              查找一所学校
-            </button>
-            <button class="text-arrow-button" type="button" data-action="open-submit">
+            <button class="primary-button" type="button" data-action="open-submit">
               我也想说一句 <span>↗</span>
             </button>
           </div>
@@ -291,7 +288,6 @@ function renderSchoolNote(school, index) {
       <span class="tape" aria-hidden="true"></span>
       <small>${escapeHtml(school.province)} · ${escapeHtml(school.city)}</small>
       <strong>${escapeHtml(school.name)}</strong>
-      <span>${escapeHtml(school.majors.slice(0, 2).join(" / "))}</span>
       <i>${school.reviews.length} 条评价 · ${school.foods.length} 家推荐</i>
     </button>
   `;
