@@ -934,7 +934,12 @@ main {
 .intro-copy {
   position: relative;
   z-index: 4;
-  width: min(78vw, 620px);
+  width: min(82vw, 760px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
   opacity: 0;
   transform: translateY(12px);
   animation: intro-text-in 1.5s ease 0.55s forwards;
@@ -943,7 +948,8 @@ main {
 .intro-handwriting {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
   opacity: 1;
 }
 
