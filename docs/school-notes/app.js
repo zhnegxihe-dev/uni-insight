@@ -395,7 +395,7 @@ function renderDetailNote(item, index, isReview) {
         <blockquote>“${escapeHtml(item.content)}”</blockquote>
         <footer>
           <span>${escapeHtml(item.author)}</span>
-          <span>${escapeHtml(item.major)} · ${escapeHtml(item.stage)}</span>
+          <span>${item.major ? `${escapeHtml(item.major)} · ` : ""}${escapeHtml(item.stage)}</span>
           <time>${escapeHtml(item.updatedAt)}</time>
         </footer>
       </article>
@@ -407,11 +407,17 @@ function renderDetailNote(item, index, isReview) {
       <p class="note-status">${escapeHtml(item.status)}</p>
       <h3>${escapeHtml(item.name)}</h3>
       <p>${escapeHtml(item.reason)}</p>
-      <dl>
-        <div><dt>位置</dt><dd>${escapeHtml(item.area)}</dd></div>
-        <div><dt>人均</dt><dd>${escapeHtml(item.price)}</dd></div>
-        <div><dt>适合</dt><dd>${escapeHtml(item.scene)}</dd></div>
-      </dl>
+      ${
+        item.area || item.price || item.scene
+          ? `
+            <dl>
+              ${item.area ? `<div><dt>位置</dt><dd>${escapeHtml(item.area)}</dd></div>` : ""}
+              ${item.price ? `<div><dt>人均</dt><dd>${escapeHtml(item.price)}</dd></div>` : ""}
+              ${item.scene ? `<div><dt>适合</dt><dd>${escapeHtml(item.scene)}</dd></div>` : ""}
+            </dl>
+          `
+          : ""
+      }
       <time>${escapeHtml(item.updatedAt)}</time>
     </article>
   `;
@@ -434,7 +440,7 @@ function renderLatest() {
     .map(
       (review, index) => `
         <article class="latest-note" style="--rotate:${index % 2 ? 1 : -1}deg">
-          <small>${escapeHtml(review.schoolName)} · ${escapeHtml(review.major)}</small>
+          <small>${[review.schoolName, review.major].filter(Boolean).map(escapeHtml).join(" · ")}</small>
           <p>“${escapeHtml(review.content)}”</p>
           <span>${escapeHtml(review.status)} · ${escapeHtml(review.updatedAt)}</span>
         </article>
