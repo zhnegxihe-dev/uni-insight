@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fffdf7" />
+    <meta
+      name="description"
+      content="真实学校评价和校园周边推荐。我们听过太多建议，看过太多广告，却很少听到大家真实的声音。"
+    />
+    <title>真实的一页 · 学校与周边便签</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <div class="intro" id="intro" aria-label="开场动画">
+      <div class="intro-paper">
+        <svg
+          class="intro-drawing"
+          viewBox="0 0 520 300"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M88 236C133 193 170 205 196 172C214 149 197 121 218 89C243 50 312 52 337 92C354 119 337 147 358 174C378 200 420 202 454 232"
+          />
+          <path d="M188 237C232 221 285 220 338 238" />
+          <path d="M260 75C245 57 218 62 213 82" />
+          <path d="M314 105C336 86 363 97 366 118" />
+          <path d="M277 151C285 158 295 158 303 150" />
+          <path d="M292 160C285 174 273 181 260 182" />
+        </svg>
+        <p class="intro-line intro-line--one">我们听过太多建议，看过太多广告，</p>
+        <p class="intro-line intro-line--two">却很少听到大家真实的声音。</p>
+        <button class="intro-skip" type="button" data-action="close-intro">进入</button>
+      </div>
+    </div>
+
+    <script src="./data.js" defer></script>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
