@@ -2,6 +2,12 @@
 
 面向高中、本科和研究生的学校真实评价与校园周边推荐页面。
 
+公网地址：
+
+```text
+https://zhnegxihe-dev.github.io/uni-insight/school-notes/
+```
+
 ## 页面定位
 
 - 公开页面只读展示，不开放账号、评论、点赞、私信和公开发帖
