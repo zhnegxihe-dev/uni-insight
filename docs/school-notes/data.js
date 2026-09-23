@@ -6,7 +6,7 @@ window.REAL_PAGE_DATA = {
     "学校评价、专业经历和校园周边推荐。当前为第一批整理内容，欢迎大家补充。",
   submissionNote:
     "不一定是大餐厅。路边的炒粉炒饭、居民楼下的街坊饭店，也可以是你想推荐给大家的地方。",
-  externalFormUrl: "",
+  externalFormUrl: "https://wj.qq.com/s2/27974251/hix7/",
   contactEmail: "",
   schools: [
     {

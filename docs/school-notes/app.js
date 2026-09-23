@@ -520,6 +520,11 @@ function bindEvents() {
 }
 
 function openSubmit() {
+  if (data.externalFormUrl) {
+    openExternalForm();
+    return;
+  }
+
   const overlay = document.querySelector("#submit-overlay");
   overlay?.classList.add("is-open");
   overlay?.setAttribute("aria-hidden", "false");
