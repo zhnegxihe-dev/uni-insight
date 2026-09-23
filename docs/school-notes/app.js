@@ -115,8 +115,7 @@ function render() {
       <section class="hero-section">
         <div class="hero-copy">
           <p class="eyebrow">REAL CAMPUS NOTES</p>
-          <h1>${escapeHtml(data.heroTitle)}</h1>
-          <p>${escapeHtml(data.heroSubtitle)}</p>
+          <p class="hero-kicker">${escapeHtml(data.heroSubtitle)}</p>
           <div class="hero-actions">
             <button class="primary-button" type="button" data-action="focus-search">
               查找一所学校
@@ -676,7 +675,7 @@ if (skipIntro || sessionStorage.getItem("real-page-intro-seen")) {
 } else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
   dismissIntro();
 } else {
-  introTimer = window.setTimeout(dismissIntro, 4800);
+  introTimer = window.setTimeout(dismissIntro, 5600);
 }
 
 render();
