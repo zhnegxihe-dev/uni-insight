@@ -10,6 +10,7 @@ const state = {
   wheelLockedUntil: 0,
   lastDraftText: "",
 };
+let introTimer = null;
 
 const palette = ["#f6d9d7", "#dcebd9", "#f8e9b9", "#d9e8f2", "#eadcf1", "#f5dfc7"];
 
@@ -125,20 +126,8 @@ function render() {
             </button>
           </div>
         </div>
-        <div class="hero-doodle" aria-hidden="true">
-          <svg viewBox="0 0 420 360" fill="none">
-            <path class="scribble" d="M67 304C90 246 92 204 71 168C111 181 138 164 149 117C158 77 199 57 236 76C271 94 271 132 304 145C341 160 364 143 387 110" />
-            <path class="scribble" d="M115 245C161 225 194 231 216 257C233 278 270 282 303 260" />
-            <path class="scribble" d="M148 118C131 95 105 106 106 130C108 150 132 154 151 136" />
-            <path class="scribble" d="M224 81C244 58 273 69 273 96C273 121 248 131 224 112" />
-            <circle cx="83" cy="97" r="26" />
-            <path d="M73 97L83 107L96 86" />
-            <circle cx="347" cy="214" r="25" />
-            <path d="M336 214H358M347 203V225" />
-            <circle cx="112" cy="312" r="24" />
-            <path d="M101 316C111 298 127 302 125 320" />
-            <path class="little-flower" d="M327 61C316 46 328 30 343 38C354 43 359 57 348 67C340 74 327 73 321 65" />
-          </svg>
+        <div class="hero-doodle">
+          <img src="./assets/moon-dream.jpg" alt="小人爬上月亮摘星星" />
         </div>
       </section>
 
@@ -613,6 +602,7 @@ async function shareDraft() {
 
 function dismissIntro() {
   if (!intro || intro.classList.contains("is-hidden")) return;
+  if (introTimer) window.clearTimeout(introTimer);
   intro.classList.add("is-hidden");
   sessionStorage.setItem("real-page-intro-seen", "1");
   window.setTimeout(() => {
@@ -685,6 +675,8 @@ if (skipIntro || sessionStorage.getItem("real-page-intro-seen")) {
   intro.hidden = true;
 } else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
   dismissIntro();
+} else {
+  introTimer = window.setTimeout(dismissIntro, 4800);
 }
 
 render();
