@@ -934,66 +934,18 @@ main {
 .intro-copy {
   position: relative;
   z-index: 4;
-  width: min(100%, 660px);
-  display: grid;
-  gap: 0;
-  text-align: left;
-  transform: rotate(-1.2deg);
-}
-
-.intro-line {
-  margin: 0;
-  color: #f7f5ef;
-  font-family: var(--hand);
-  font-size: clamp(37px, 5.6vw, 68px);
-  font-weight: 500;
-  letter-spacing: 0.035em;
-  line-height: 1.42;
+  width: min(78vw, 620px);
   opacity: 0;
-  animation: intro-text-in 850ms ease 0.45s forwards;
+  transform: translateY(12px);
+  animation: intro-text-in 1.5s ease 0.55s forwards;
 }
 
-.intro-line--one {
-  margin-left: 0;
-  transform: rotate(-1deg);
-}
-
-.intro-line--two {
-  margin-left: 58px;
-  animation-delay: 0.85s;
-  transform: rotate(-0.6deg);
-}
-
-.intro-line--three {
-  margin-left: 28px;
-  animation-delay: 1.25s;
-  transform: rotate(-1.3deg);
-}
-
-.intro-line--four {
-  position: relative;
-  margin-left: 88px;
-  animation-delay: 1.65s;
-  transform: rotate(-1.8deg);
-}
-
-.intro-underline {
-  position: absolute;
-  left: 4px;
-  bottom: -11px;
-  width: min(230px, 72%);
-  height: 22px;
-  overflow: visible;
-}
-
-.intro-underline path {
-  fill: none;
-  stroke: rgba(247, 245, 239, 0.9);
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-dasharray: 260;
-  stroke-dashoffset: 260;
-  animation: intro-underline-draw 900ms ease 2.25s forwards;
+.intro-handwriting {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: invert(1) contrast(0.96);
+  opacity: 0.98;
 }
 
 @keyframes intro-text-in {
@@ -1009,40 +961,37 @@ main {
   }
 }
 
-@keyframes intro-underline-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
 .moon-glow {
   position: absolute;
   z-index: 3;
   left: 50%;
   top: 50%;
-  width: 72px;
-  height: 72px;
+  width: 260px;
+  height: 260px;
   border-radius: 50%;
-  background: #fff3b8;
-  box-shadow:
-    0 0 80px 52px rgba(255, 232, 153, 0.78),
-    0 0 220px 150px rgba(255, 242, 190, 0.42);
+  background: radial-gradient(
+    circle,
+    rgba(255, 249, 224, 0.44) 0%,
+    rgba(255, 245, 209, 0.2) 38%,
+    rgba(255, 245, 209, 0) 72%
+  );
+  filter: blur(10px);
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.15);
-  animation: moon-spread 2.2s ease-in 3.45s forwards;
+  transform: translate(-50%, -50%) scale(0.5);
+  animation: moon-spread 2.8s ease-in-out 4.05s forwards;
 }
 
 @keyframes moon-spread {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.15);
+    transform: translate(-50%, -50%) scale(0.5);
   }
-  28% {
-    opacity: 1;
+  38% {
+    opacity: 0.58;
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(26);
+    transform: translate(-50%, -50%) scale(8);
   }
 }
 
@@ -1057,7 +1006,7 @@ main {
   color: rgba(255, 253, 244, 0.84);
   cursor: pointer;
   opacity: 0;
-  animation: intro-text-in 500ms ease 2.8s forwards;
+  animation: intro-text-in 700ms ease 3.25s forwards;
 }
 
 @media (max-width: 840px) {

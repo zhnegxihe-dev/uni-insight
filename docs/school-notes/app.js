@@ -675,7 +675,7 @@ if (skipIntro || sessionStorage.getItem("real-page-intro-seen")) {
 } else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
   dismissIntro();
 } else {
-  introTimer = window.setTimeout(dismissIntro, 5600);
+  introTimer = window.setTimeout(dismissIntro, 7200);
 }
 
 render();
