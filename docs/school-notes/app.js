@@ -192,9 +192,9 @@ function render() {
       <button class="primary-button" type="button" data-action="open-submit">写一张便签</button>
     </footer>
 
-    <button class="floating-submit" type="button" data-action="open-submit" aria-label="打开投稿">
-      <span>+</span>
-      投稿
+    <button class="floating-submit" type="button" data-action="open-submit" aria-label="打开问卷调查">
+      <span>＋</span>
+      问卷调查
     </button>
 
     <div class="submit-overlay" id="submit-overlay" aria-hidden="true">

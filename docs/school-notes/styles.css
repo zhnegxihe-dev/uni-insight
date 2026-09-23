@@ -738,22 +738,27 @@ main {
 .floating-submit {
   position: fixed;
   z-index: 70;
-  right: 18px;
-  bottom: 20px;
-  display: inline-flex;
+  left: 0;
+  bottom: 10%;
+  width: 42px;
+  min-height: 112px;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 112px;
-  min-height: 46px;
   justify-content: center;
-  padding: 10px 16px;
+  gap: 6px;
+  padding: 12px 7px;
   border: 2px solid var(--line);
-  border-radius: 18px 13px 20px 14px / 13px 19px 14px 20px;
-  background: var(--green);
+  border-left: 0;
+  border-radius: 0 15px 15px 0;
+  background: rgba(145, 167, 122, 0.94);
   color: #fffef8;
-  box-shadow: 4px 6px 0 rgba(59, 73, 55, 0.14);
+  box-shadow: 5px 6px 16px rgba(59, 73, 55, 0.14);
   cursor: pointer;
   font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  line-height: 1.25;
+  writing-mode: vertical-rl;
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -761,12 +766,12 @@ main {
 }
 
 .floating-submit:hover {
-  transform: translateY(-2px);
-  box-shadow: 5px 8px 0 rgba(59, 73, 55, 0.13);
+  transform: translateX(4px);
+  box-shadow: 7px 8px 18px rgba(59, 73, 55, 0.15);
 }
 
 .floating-submit span {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
 }
 
@@ -1119,8 +1124,12 @@ main {
   }
 
   .floating-submit {
-    right: 14px;
-    bottom: 14px;
+    left: 0;
+    bottom: 84px;
+    width: 38px;
+    min-height: 104px;
+    padding: 10px 6px;
+    font-size: 12px;
   }
 
   .submit-sheet {
