@@ -8,6 +8,10 @@ const state = {
   searchTokens: [],
   matches: data.schools,
   wheelLockedUntil: 0,
+  swipeStartX: 0,
+  swipeStartY: 0,
+  swipeActive: false,
+  suppressSchoolClickUntil: 0,
   lastDraftText: "",
 };
 let introTimer = null;
@@ -154,7 +158,10 @@ function render() {
         <div class="section-heading section-heading--center">
           <div>
             <p class="eyebrow">SCHOOL NOTES</p>
-            <h2 id="school-carousel-title">滚动鼠标，翻看学校便签</h2>
+            <h2 id="school-carousel-title">
+              <span class="desktop-only">滚动鼠标，翻看学校便签</span>
+              <span class="mobile-only">左右滑动，翻看学校便签</span>
+            </h2>
           </div>
         </div>
 
@@ -296,7 +303,10 @@ function renderSchoolNote(school, index) {
 function updateCarousel() {
   const cards = [...document.querySelectorAll(".school-note")];
   const total = cards.length;
-  const viewportWidth = Math.min(window.innerWidth * 0.22, 142);
+  const compact = window.matchMedia("(max-width: 720px)").matches;
+  const viewportWidth = compact
+    ? Math.min(window.innerWidth * 0.7, 300)
+    : Math.min(window.innerWidth * 0.22, 142);
 
   cards.forEach((card, index) => {
     let offset = index - state.currentSchoolIndex;
@@ -306,21 +316,39 @@ function updateCarousel() {
     const abs = Math.abs(offset);
     const x = offset * viewportWidth;
     const rotate = offset * 3.4;
-    const scale = Math.max(0.7, 1 - abs * 0.12);
-    const opacity = abs > 2 ? 0 : 1 - abs * 0.22;
+    const scale = compact
+      ? Math.max(0.82, 1 - abs * 0.16)
+      : Math.max(0.7, 1 - abs * 0.12);
+    const opacity = compact
+      ? abs > 1
+        ? 0
+        : 1 - abs * 0.35
+      : abs > 2
+        ? 0
+        : 1 - abs * 0.22;
 
-    card.style.transform = `translate3d(calc(-50% + ${x}px), ${abs * 8}px, 0) scale(${scale}) rotate(${rotate}deg)`;
+    card.style.transform = compact
+      ? `translate3d(calc(-50% + ${x}px), 0, 0) scale(${scale}) rotate(${offset * 1.2}deg)`
+      : `translate3d(calc(-50% + ${x}px), ${abs * 8}px, 0) scale(${scale}) rotate(${rotate}deg)`;
     card.style.opacity = opacity;
     card.style.zIndex = String(20 - abs);
-    card.style.pointerEvents = abs > 2 ? "none" : "auto";
+    card.style.pointerEvents = compact
+      ? abs > 1
+        ? "none"
+        : "auto"
+      : abs > 2
+        ? "none"
+        : "auto";
     card.classList.toggle("is-active", offset === 0);
   });
 
   const dots = document.querySelector("#carousel-dots");
   if (dots) {
-    dots.innerHTML = data.schools
-      .map(
-        (school, index) => `
+    dots.innerHTML = `
+      <span class="carousel-mobile-count">${state.currentSchoolIndex + 1} / ${total}</span>
+      ${data.schools
+        .map(
+          (school, index) => `
           <button
             class="carousel-dot ${index === state.currentSchoolIndex ? "is-active" : ""}"
             type="button"
@@ -329,8 +357,9 @@ function updateCarousel() {
             aria-label="查看${escapeHtml(school.name)}"
           ></button>
         `,
-      )
-      .join("");
+        )
+        .join("")}
+    `;
   }
 }
 
@@ -389,10 +418,12 @@ function renderDetail() {
 function renderDetailNote(item, index, isReview) {
   const color = palette[(index + state.currentSchoolIndex) % palette.length];
   if (isReview) {
+    const isLong = String(item.content ?? "").length > 180;
     return `
       <article class="detail-note" style="--note-color:${color};--rotate:${index % 2 ? 1.1 : -1.4}deg">
         <p class="note-status">${escapeHtml(item.status)}</p>
-        <blockquote>“${escapeHtml(item.content)}”</blockquote>
+        <blockquote class="${isLong ? "note-content is-collapsed" : "note-content"}" data-note-content>“${escapeHtml(item.content)}”</blockquote>
+        ${isLong ? '<button class="note-expand-button" type="button" data-action="toggle-note">展开全文</button>' : ""}
         <footer>
           <span>${escapeHtml(item.author)}</span>
           <span>${item.major ? `${escapeHtml(item.major)} · ` : ""}${escapeHtml(item.stage)}</span>
@@ -402,11 +433,13 @@ function renderDetailNote(item, index, isReview) {
     `;
   }
 
+  const isLongFood = String(item.reason ?? "").length > 180;
   return `
     <article class="detail-note detail-note--food" style="--note-color:${color};--rotate:${index % 2 ? 1.2 : -1.5}deg">
       <p class="note-status">${escapeHtml(item.status)}</p>
       <h3>${escapeHtml(item.name)}</h3>
-      <p>${escapeHtml(item.reason)}</p>
+      <p class="${isLongFood ? "note-content is-collapsed" : "note-content"}" data-note-content>${escapeHtml(item.reason)}</p>
+      ${isLongFood ? '<button class="note-expand-button" type="button" data-action="toggle-note">展开全文</button>' : ""}
       ${
         item.area || item.price || item.scene
           ? `
@@ -467,7 +500,7 @@ function renderSearchSuggestions() {
           (school) => `
             <button type="button" data-action="search-school" data-school="${escapeHtml(school.id)}">
               <strong>${escapeHtml(school.name)}</strong>
-              <span>${escapeHtml(school.province)} · ${escapeHtml(school.city)} · ${escapeHtml(school.majors.slice(0, 2).join(" / "))}</span>
+              <span>${[school.province, school.city, ...school.majors.slice(0, 2)].filter(Boolean).map(escapeHtml).join(" · ")}</span>
             </button>
           `,
         )
@@ -485,7 +518,8 @@ function moveSchool(step) {
 }
 
 function bindEvents() {
-  document.querySelector("#school-carousel")?.addEventListener(
+  const carousel = document.querySelector("#school-carousel");
+  carousel?.addEventListener(
     "wheel",
     (event) => {
       if (Math.abs(event.deltaY) < 8) return;
@@ -498,6 +532,28 @@ function bindEvents() {
     },
     { passive: false },
   );
+
+  carousel?.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse") return;
+    state.swipeStartX = event.clientX;
+    state.swipeStartY = event.clientY;
+    state.swipeActive = true;
+    carousel.setPointerCapture?.(event.pointerId);
+  });
+
+  carousel?.addEventListener("pointerup", (event) => {
+    if (!state.swipeActive || event.pointerType === "mouse") return;
+    state.swipeActive = false;
+    const deltaX = event.clientX - state.swipeStartX;
+    const deltaY = event.clientY - state.swipeStartY;
+    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+    state.suppressSchoolClickUntil = Date.now() + 350;
+    moveSchool(deltaX < 0 ? 1 : -1);
+  });
+
+  carousel?.addEventListener("pointercancel", () => {
+    state.swipeActive = false;
+  });
 
   const searchInput = document.querySelector("#school-search");
   searchInput?.addEventListener("input", () => {
@@ -621,6 +677,7 @@ app.addEventListener("click", (event) => {
   if (!target) return;
 
   if (target.dataset.school) {
+    if (Date.now() < state.suppressSchoolClickUntil) return;
     chooseSchool(target.dataset.school);
     return;
   }
@@ -638,6 +695,12 @@ app.addEventListener("click", (event) => {
   if (action === "detail-tab") {
     state.activeTab = target.dataset.tab;
     renderDetail();
+  }
+  if (action === "toggle-note") {
+    const note = target.closest(".detail-note");
+    const content = note?.querySelector("[data-note-content]");
+    const collapsed = content?.classList.toggle("is-collapsed");
+    target.textContent = collapsed ? "展开全文" : "收起全文";
   }
   if (action === "open-submit") openSubmit();
   if (action === "close-submit") closeSubmit();
