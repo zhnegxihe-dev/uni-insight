@@ -1201,6 +1201,14 @@ main {
     display: inline-block;
   }
 
+  .latest-note .note-content.is-collapsed {
+    -webkit-line-clamp: 5;
+  }
+
+  .latest-note .note-expand-button {
+    margin: -8px 0 14px;
+  }
+
   .search-box {
     position: sticky;
     z-index: 50;

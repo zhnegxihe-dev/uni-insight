@@ -471,13 +471,17 @@ function renderLatest() {
 
   latestGrid.innerHTML = latestReviews
     .map(
-      (review, index) => `
+      (review, index) => {
+        const isLong = String(review.content ?? "").length > 100;
+        return `
         <article class="latest-note" style="--rotate:${index % 2 ? 1 : -1}deg">
           <small>${[review.schoolName, review.major].filter(Boolean).map(escapeHtml).join(" · ")}</small>
-          <p>“${escapeHtml(review.content)}”</p>
+          <p class="${isLong ? "note-content is-collapsed" : "note-content"}" data-note-content>“${escapeHtml(review.content)}”</p>
+          ${isLong ? '<button class="note-expand-button" type="button" data-action="toggle-note">展开全文</button>' : ""}
           <span>${escapeHtml(review.status)} · ${escapeHtml(review.updatedAt)}</span>
         </article>
-      `,
+      `;
+      },
     )
     .join("");
 }
@@ -697,7 +701,7 @@ app.addEventListener("click", (event) => {
     renderDetail();
   }
   if (action === "toggle-note") {
-    const note = target.closest(".detail-note");
+    const note = target.closest(".detail-note, .latest-note");
     const content = note?.querySelector("[data-note-content]");
     const collapsed = content?.classList.toggle("is-collapsed");
     target.textContent = collapsed ? "展开全文" : "收起全文";
